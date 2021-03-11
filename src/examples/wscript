@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import os
+import fnmatch
+
+
+def build(bld):
+    # Includes
+    includes_path = ".."
+
+    # Get source files
+    sources = []
+    for root, _, filenames in os.walk(bld.path.abspath()):
+        for filename in fnmatch.filter(filenames, "*.cpp"):
+            sources.append(os.path.join(root, filename))
+    sources = [f[len(bld.path.abspath()) + 1:] for f in sources]
+
+    # Define additional required libraries for the examples
+    example_required = {}  # { "eigval.cpp": [""] }
+
+    # Compile all the examples
+    for example in sources:
+        if example in example_required:
+            if set(example_required[example]).issubset(bld.env["libs"]):
+                bld.program(
+                    features="cxx",
+                    install_path=None,
+                    source=example,
+                    includes=includes_path,
+                    uselib=bld.env["libs"],
+                    use=bld.env["libname"],
+                    cxxflags=bld.get_env()["CXXFLAGS"],
+                    target=example[: len(example) - len(".cpp")],
+                )
+        else:
+            bld.program(
+                features="cxx",
+                install_path=None,
+                source=example,
+                includes=includes_path,
+                uselib=bld.env["libs"],
+                use=bld.env["libname"],
+                cxxflags=bld.get_env()["CXXFLAGS"],
+                target=example[: len(example) - len(".cpp")],
+            )

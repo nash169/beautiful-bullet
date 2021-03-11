@@ -1,0 +1,3 @@
+[submodule "waf_tools"]
+	path = waf_tools
+	url = git@github.com:nash169/waf-tools.git
