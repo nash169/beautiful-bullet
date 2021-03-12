@@ -10,8 +10,10 @@ int main(int argc, char** argv)
 
     importers::ImporterURDF importer;
 
-    if (importer.loadURDF("models/iiwa/model.urdf"))
-        std::cout << "hello" << std::endl;
+    if (importer.loadURDF("models/iiwa/model.urdf")) {
+        int rootLinkIndex = importer.getRootLinkIndex();
+        b3Printf("urdf root link index = %d\n", rootLinkIndex);
+    }
 
     return 0;
 }

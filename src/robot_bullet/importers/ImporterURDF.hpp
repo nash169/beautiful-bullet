@@ -1,14 +1,18 @@
 #ifndef ROBOT_BULLET_IMPORTER_URDF
 #define ROBOT_BULLET_IMPORTER_URDF
 
-#include <iostream>
+#include <fstream>
 #include <string>
 
 #include <Bullet3Common/b3FileUtils.h>
 #include <btBulletCollisionCommon.h>
 
+#include <BulletCollision/CollisionShapes/btSdfCollisionShape.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
+
 #include "robot_bullet/importers/ParserURDF.hpp"
 #include "robot_bullet/interfaces/DefaultFileIO.hpp"
+#include "robot_bullet/thirdparty/tiny_obj_loader.h"
 
 namespace robot_bullet {
     namespace importers {
@@ -93,78 +97,31 @@ namespace robot_bullet {
 
             ~ImporterURDF() {}
 
-            bool loadURDF(const char* fileName, bool forceFixedBase = false)
-            {
-                if (strlen(fileName) == 0)
-                    return false;
+            bool loadURDF(const char* fileName, bool forceFixedBase = false);
 
-                //int argc=0;
-                char relativeFileName[1024];
+            int getRootLinkIndex() const;
 
-                b3FileUtils fu;
+            void getLinkChildIndices(int linkIndex, btAlignedObjectArray<int>& childLinkIndices) const;
 
-                //bool fileFound = fu.findFile(fileName, relativeFileName, 1024);
-                bool fileFound = m_data->m_fileIO->findResourcePath(fileName, relativeFileName, 1024);
+            void getMassAndInertia(int urdfLinkIndex, btScalar& mass, btVector3& localInertiaDiagonal, btTransform& inertialFrame, int flags) const;
 
-                std::string xml_string;
+            bool getJointInfo2(int urdfLinkIndex, btTransform& parent2joint, btTransform& linkTransformInWorld, btVector3& jointAxisInJointSpace, int& jointType, btScalar& jointLowerLimit, btScalar& jointUpperLimit, btScalar& jointDamping, btScalar& jointFriction, btScalar& jointMaxForce, btScalar& jointMaxVelocity) const;
 
-                if (!fileFound) {
-                    b3Warning("URDF file '%s' not found\n", fileName);
-                    return false;
-                }
-                else {
-                    char path[1024];
-                    fu.extractPath(relativeFileName, path, sizeof(path));
-                    m_data->setSourceFile(relativeFileName, path);
+            std::string getLinkName(int linkIndex) const;
 
-                    //read file
-                    int fileId = m_data->m_fileIO->fileOpen(relativeFileName, "r");
+            btCompoundShape* convertLinkCollisionShapes(int linkIndex, const char* pathPrefix, const btTransform& localInertiaFrame) const;
 
-                    char destBuffer[8192];
-                    char* line = 0;
-                    do {
-                        line = m_data->m_fileIO->readLine(fileId, destBuffer, 8192);
-                        if (line) {
-                            xml_string += (std::string(destBuffer) + "\n");
-                        }
-                    } while (line);
-                    m_data->m_fileIO->fileClose(fileId);
-                }
+            static btCollisionShape* createConvexHullFromShapes(const tinyobj::attrib_t& attribute, std::vector<tinyobj::shape_t>& shapes, const btVector3& geomScale, int flags);
 
-                BulletErrorLogger loggie;
-                m_data->m_urdfParser.setParseSDF(false);
-                bool result = false;
+            btCollisionShape* convertURDFToCollisionShape(const UrdfCollision* collision, const char* urdfPathPrefix) const;
 
-                if (xml_string.length()) {
-                    result = m_data->m_urdfParser.loadUrdf(xml_string.c_str(), &loggie, forceFixedBase, (m_data->m_flags & CUF_PARSE_SENSORS));
+            void setLinkColor2(int linkIndex, struct UrdfMaterialColor& matCol) const;
 
-                    if (m_data->m_flags & CUF_IGNORE_VISUAL_SHAPES) {
-                        for (int i = 0; i < m_data->m_urdfParser.getModel().m_links.size(); i++) {
-                            UrdfLink* linkPtr = *m_data->m_urdfParser.getModel().m_links.getAtIndex(i);
-                            linkPtr->m_visualArray.clear();
-                        }
-                    }
-                    if (m_data->m_flags & CUF_IGNORE_COLLISION_SHAPES) {
-                        for (int i = 0; i < m_data->m_urdfParser.getModel().m_links.size(); i++) {
-                            UrdfLink* linkPtr = *m_data->m_urdfParser.getModel().m_links.getAtIndex(i);
-                            linkPtr->m_collisionArray.clear();
-                        }
-                    }
-                    if (m_data->m_urdfParser.getModel().m_rootLinks.size()) {
-                        if (m_data->m_flags & CUF_MERGE_FIXED_LINKS) {
-                            m_data->m_urdfParser.mergeFixedLinks(m_data->m_urdfParser.getModel(), m_data->m_urdfParser.getModel().m_rootLinks[0], &loggie, forceFixedBase, 0);
-                            m_data->m_urdfParser.getModel().m_links.clear();
-                            m_data->m_urdfParser.getModel().m_joints.clear();
-                            m_data->m_urdfParser.recreateModel(m_data->m_urdfParser.getModel(), m_data->m_urdfParser.getModel().m_rootLinks[0], &loggie);
-                        }
-                        if (m_data->m_flags & CUF_PRINT_URDF_INFO) {
-                            m_data->m_urdfParser.printTree(m_data->m_urdfParser.getModel().m_rootLinks[0], &loggie, 0);
-                        }
-                    }
-                }
+            bool getLinkColor2(int linkIndex, UrdfMaterialColor& matCol) const;
 
-                return result;
-            }
+            bool getLinkContactInfo(int urdflinkIndex, URDFLinkContactInfo& contactInfo) const;
+
+            int getCollisionGroupAndMask(int linkIndex, int& colGroup, int& colMask) const;
 
         protected:
             BulletURDFInternalData* m_data;
