@@ -123,6 +123,8 @@ namespace robot_bullet {
 
             int getCollisionGroupAndMask(int linkIndex, int& colGroup, int& colMask) const;
 
+            const char* getPathPrefix();
+
         protected:
             BulletURDFInternalData* m_data;
         };

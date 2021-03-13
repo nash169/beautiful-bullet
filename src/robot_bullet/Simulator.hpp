@@ -70,7 +70,12 @@ namespace robot_bullet {
             _dynamicsWorld->setGravity(btVector3(0, -9.81, 0));
         }
 
-        ~Simulator();
+        ~Simulator() {}
+
+        btMultiBodyDynamicsWorld* getWorld()
+        {
+            return _dynamicsWorld;
+        }
 
     protected:
         btAlignedObjectArray<btCollisionShape*> _collisionShapes;
@@ -81,6 +86,9 @@ namespace robot_bullet {
         btMultiBodyConstraintSolver* _solver;
         btDefaultCollisionConfiguration* _collisionConfiguration;
         btMultiBodyDynamicsWorld* _dynamicsWorld;
+
+        // Ground
+        btBoxShape* _ground;
     };
 } // namespace robot_bullet
 

@@ -630,5 +630,10 @@ namespace robot_bullet {
             }
             return result;
         }
+
+        const char* ImporterURDF::getPathPrefix()
+        {
+            return m_data->m_pathPrefix;
+        }
     } // namespace importers
 } // namespace robot_bullet

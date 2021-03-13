@@ -37,7 +37,7 @@ def configure(cfg):
     cfg.load("compiler_cxx")  # cfg.load("clang_compilation_database")
 
     # Define require libraries
-    cfg.get_env()["requires"] += ["BULLET"]
+    cfg.get_env()["requires"] += ["BULLET", "CORRADE"]
 
     # (Optional Graphics) Magnum components and integration loading
     cfg.options.magnum_components = (
@@ -49,7 +49,7 @@ def configure(cfg):
     cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common,BulletInverseDynamicsUtils"
 
     # Load tools configuration
-    cfg.load("flags bullet magnum x11", tooldir="waf_tools")
+    cfg.load("flags bullet corrade magnum", tooldir="waf_tools")
 
     # Remove duplicates
     cfg.get_env()["libs"] = list(set(cfg.get_env()["libs"]))

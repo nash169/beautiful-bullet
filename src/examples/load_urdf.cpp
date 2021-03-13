@@ -1,19 +1,16 @@
 #include <iostream>
+
 #include <robot_bullet/Simulator.hpp>
-#include <robot_bullet/importers/ImporterURDF.hpp>
+
+#include <robot_bullet/Agent.hpp>
 
 using namespace robot_bullet;
 
 int main(int argc, char** argv)
 {
-    Simulator my_sim();
+    Simulator my_sim;
 
-    importers::ImporterURDF importer;
-
-    if (importer.loadURDF("models/iiwa/model.urdf")) {
-        int rootLinkIndex = importer.getRootLinkIndex();
-        b3Printf("urdf root link index = %d\n", rootLinkIndex);
-    }
+    Agent iiwa(my_sim, "models/iiwa/model.urdf");
 
     return 0;
 }
