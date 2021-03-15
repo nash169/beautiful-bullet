@@ -1,9 +1,13 @@
 #ifndef ROBOT_BULLET_AGENT_HPP
 #define ROBOT_BULLET_AGENT_HPP
 
+#include <iostream>
 // Corrade
 #include <Corrade/Containers/EnumSet.h>
 
+#include <LinearMath/btVector3.h>
+
+#include <BulletCollision/btBulletCollisionCommon.h>
 #include <InverseDynamics/btMultiBodyTreeCreator.hpp>
 
 #include <robot_bullet/importers/ImporterURDF.hpp>
@@ -27,22 +31,31 @@ namespace robot_bullet {
     CORRADE_ENUMSET_OPERATORS(AgentTypes)
 
     struct AgentParams {
-        double mass = 1;
-        std::string material = "default";
-        float radius = 1.0f; // Sphere, cylinder, cone, capsule
-        float height = 1.0f; // Cylinder, cone, capsule
-        float xLength = 1.0f; // Box
-        float yLength = 1.0f; // Box
-        float zLength = 1.0f; // Box, ground
+        AgentParams(const btScalar& pMass = 1.f, const btVector3& origin = btVector3(0.f, 0.f, 0.f), const btVector3& pBox = btVector3(1.f, 1.f, 1.f), const btScalar& pSphere = 1.f)
+            : mass(pMass), box(pBox), sphere(pSphere)
+        {
+            transform.setIdentity();
+            transform.setOrigin(origin);
+        }
+
+        btScalar mass;
+        // Box params
+        btVector3 box;
+        // Sphere params
+        btScalar sphere;
+        // Origin
+        btTransform transform;
     };
 
     class Agent {
     public:
         // Constructor
-        Agent(Simulator& simulator, const std::string& model, const std::string& name = "agent", const AgentParams& params = AgentParams())
+        Agent(Simulator& simulator, const std::string& model, const AgentParams& params = AgentParams())
         {
             // Check if we are loading an URDF model
             if (model.size() > 5 && !model.compare(model.size() - 5, 5, ".urdf")) {
+                std::cout << "Hello" << std::endl;
+
                 importers::ImporterURDF importer;
 
                 if (importer.loadURDF(model.c_str())) {
@@ -58,6 +71,10 @@ namespace robot_bullet {
 
                     utils::ConvertURDF2Bullet(importer, mb_creator, identityTrans, simulator.getWorld(), true, importer.getPathPrefix());
 
+                    for (int i = 0; i < importer.getNumAllocatedCollisionShapes(); i++) {
+                        simulator.getCollisionShapes().push_back(importer.getAllocatedCollisionShape(i));
+                    }
+
                     _multiBody = mb_creator.getBulletMultiBody();
 
                     if (_multiBody) {
@@ -68,42 +85,51 @@ namespace robot_bullet {
                         b3Printf("Root link name = %s", importer.getLinkName(importer.getRootLinkIndex()).c_str());
                     }
                 }
-
-                // construct inverse model
-                btInverseDynamics::btMultiBodyTreeCreator id_creator;
-                if (-1 == id_creator.createFromBtMultiBody(_multiBody, false)) {
-                    b3Error("error creating tree\n");
-                }
-                else {
-                    _inverseModel = btInverseDynamics::CreateMultiBodyTree(id_creator);
-                }
             }
             else {
                 if (!model.compare("box")) {
+                    /* Set box type */
                     _type = AgentType::BOX;
-                    _box = new btBoxShape{{_params.xLength, _params.yLength, _params.zLength}};
+                    /* Create box shape */
+                    btBoxShape* box_shape = new btBoxShape(_params.box);
+                    simulator.getCollisionShapes().push_back(box_shape);
+                    /* Create box rigid body */
+                    _rigidBody = createRigidBody(_params.mass, _params.transform, box_shape);
+                    /* don't know yet */
+                    _rigidBody->forceActivationState(DISABLE_DEACTIVATION);
+                }
+                else if (!model.compare("sphere")) {
+                    /* Set sphere type */
+                    _type = AgentType::SPHERE;
+                    /* Create sphere shape */
+                    btSphereShape sphere_shape(_params.sphere);
+                    // simulator.getCollisionShapes().push_back(sphere_shape);
+                    /* Create box rigid body */
+                    // _rigidBody = createRigidBody(_params.mass, _params.transform, sphere_shape);
+                    /* don't know yet */
+                    // _rigidBody->forceActivationState(DISABLE_DEACTIVATION);
+                }
+                else {
+                    b3Warning("Basic shape not found.");
+                    return;
                 }
 
-                if (!model.compare("sphere")) {
-                    _type = AgentType::SPHERE;
-                    _sphere = new btSphereShape{_params.radius};
-                }
+                // Add rigid body to the world simulation
+                simulator.getWorld()->addRigidBody(_rigidBody);
             }
         }
 
         // Destructor
         ~Agent()
         {
-            delete _inverseModel;
         }
 
     protected:
-        // Bullet MuliBody Object
+        // Bullet MultiBody Object
         btMultiBody* _multiBody;
 
-        // Basic shapes
-        btBoxShape* _box;
-        btSphereShape* _sphere;
+        // Bullet Rigid Body Object
+        btRigidBody* _rigidBody;
 
         // Agent name
         std::string _name;
@@ -114,8 +140,29 @@ namespace robot_bullet {
         // Agent parameters
         AgentParams _params;
 
-        // Inverse Dynamics Model (Pinocchio will handle this)
-        btInverseDynamics::MultiBodyTree* _inverseModel;
+        // Create Rigid Body
+        btRigidBody* createRigidBody(float mass, const btTransform& startTransform, btCollisionShape* shape)
+        {
+            btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
+
+            //rigidbody is dynamic if and only if mass is non zero, otherwise static
+            bool isDynamic = (mass != 0.f);
+
+            btVector3 localInertia(0, 0, 0);
+            if (isDynamic)
+                shape->calculateLocalInertia(mass, localInertia);
+
+            btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+
+            btRigidBody::btRigidBodyConstructionInfo cInfo(mass, myMotionState, shape, localInertia);
+
+            btRigidBody* body = new btRigidBody(cInfo);
+
+            body->setUserIndex(-1);
+            // m_dynamicsWorld->addRigidBody(body);
+            // _rigidBody->forceActivationState(DISABLE_DEACTIVATION);
+            return body;
+        }
     }; // namespace robot_raisim
 } // namespace robot_bullet
 

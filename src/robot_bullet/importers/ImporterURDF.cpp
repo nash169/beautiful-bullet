@@ -635,5 +635,15 @@ namespace robot_bullet {
         {
             return m_data->m_pathPrefix;
         }
+
+        int ImporterURDF::getNumAllocatedCollisionShapes() const
+        {
+            return m_data->m_allocatedCollisionShapes.size();
+        }
+
+        btCollisionShape* ImporterURDF::getAllocatedCollisionShape(int index)
+        {
+            return m_data->m_allocatedCollisionShapes[index];
+        }
     } // namespace importers
 } // namespace robot_bullet

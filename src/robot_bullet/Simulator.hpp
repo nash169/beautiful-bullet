@@ -52,21 +52,22 @@ namespace robot_bullet {
             // collision configuration contains default setup for memory, collision setup
             _collisionConfiguration = new btDefaultCollisionConfiguration(); // _collisionConfiguration->setConvexConvexMultipointIterations();
 
-            _filterCallback = new MyOverlapFilterCallback2();
-
             // use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
             _dispatcher = new btCollisionDispatcher(_collisionConfiguration);
 
+            // broadphase
+            _filterCallback = new MyOverlapFilterCallback2();
             _pairCache = new btHashedOverlappingPairCache();
-
             _pairCache->setOverlapFilterCallback(_filterCallback);
-
             _broadphase = new btDbvtBroadphase(_pairCache); // btSimpleBroadphase();
 
+            // solver
             _solver = new btMultiBodyConstraintSolver;
 
+            // create dynamics world
             _dynamicsWorld = new btMultiBodyDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
 
+            // set world gravity
             _dynamicsWorld->setGravity(btVector3(0, -9.81, 0));
         }
 
@@ -77,18 +78,62 @@ namespace robot_bullet {
             return _dynamicsWorld;
         }
 
+        btAlignedObjectArray<btCollisionShape*>& getCollisionShapes()
+        {
+            return _collisionShapes;
+        }
+
+        void addGround()
+        {
+            ///create a ground
+            btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(150.), btScalar(25.), btScalar(150.)));
+
+            _collisionShapes.push_back(groundShape);
+
+            btTransform groundTransform;
+            groundTransform.setIdentity();
+            groundTransform.setOrigin(btVector3(0, -40, 0));
+            groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0.));
+            //We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
+            btScalar mass(0.);
+
+            //rigidbody is dynamic if and only if mass is non zero, otherwise static
+            bool isDynamic = (mass != 0.f);
+
+            btVector3 localInertia(0, 0, 0);
+            if (isDynamic)
+                groundShape->calculateLocalInertia(mass, localInertia);
+
+            //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+            btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
+            btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
+            btRigidBody* body = new btRigidBody(rbInfo);
+            body->setFriction(0.5);
+
+            //add the ground to the dynamics world
+            _dynamicsWorld->addRigidBody(body, 1, 1 + 2);
+        }
+
     protected:
-        btAlignedObjectArray<btCollisionShape*> _collisionShapes;
+        /* Collision Configuration */
+        btDefaultCollisionConfiguration* _collisionConfiguration;
+
+        /* Collision Dispatcher */
+        btCollisionDispatcher* _dispatcher;
+
+        /* Broad Phase Interface */
         MyOverlapFilterCallback2* _filterCallback;
         btOverlappingPairCache* _pairCache;
         btBroadphaseInterface* _broadphase;
-        btCollisionDispatcher* _dispatcher;
-        btMultiBodyConstraintSolver* _solver;
-        btDefaultCollisionConfiguration* _collisionConfiguration;
-        btMultiBodyDynamicsWorld* _dynamicsWorld;
 
-        // Ground
-        btBoxShape* _ground;
+        /* Multibody Constraints Solver */
+        btMultiBodyConstraintSolver* _solver; // btSequentialImpulseConstraintSolver
+
+        /* Multibody Dynamic World */
+        btMultiBodyDynamicsWorld* _dynamicsWorld; // btDiscreteDynamicsWorld
+
+        /* Collision Shapes */
+        btAlignedObjectArray<btCollisionShape*> _collisionShapes;
     };
 } // namespace robot_bullet
 

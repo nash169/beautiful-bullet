@@ -125,6 +125,10 @@ namespace robot_bullet {
 
             const char* getPathPrefix();
 
+            int getNumAllocatedCollisionShapes() const;
+
+            btCollisionShape* getAllocatedCollisionShape(int index);
+
         protected:
             BulletURDFInternalData* m_data;
         };
