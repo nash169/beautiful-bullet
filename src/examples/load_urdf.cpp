@@ -4,6 +4,10 @@
 
 #include <robot_bullet/Agent.hpp>
 
+#ifdef GRAPHICS
+#include <robot_bullet/graphics/MagnumGraphics.hpp>
+#endif
+
 using namespace robot_bullet;
 
 int main(int argc, char** argv)

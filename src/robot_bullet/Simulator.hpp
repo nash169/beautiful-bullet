@@ -1,14 +1,15 @@
 #ifndef ROBOT_BULLET_SIMULATOR_HPP
 #define ROBOT_BULLET_SIMULATOR_HPP
 
-#include <memory>
-
 #include <btBulletDynamicsCommon.h>
 
 #include <BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h>
 #include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
 #include <BulletDynamics/Featherstone/btMultiBodyLinkCollider.h>
 #include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
+
+#include "robot_bullet/Agent.hpp"
+#include "robot_bullet/graphics/AbstractGraphics.hpp"
 
 namespace robot_bullet {
     enum MyFilterModes {
@@ -114,6 +115,36 @@ namespace robot_bullet {
             _dynamicsWorld->addRigidBody(body, 1, 1 + 2);
         }
 
+        void addAgent(Agent* agent)
+        {
+            _agents.push_back(agent);
+        }
+
+        void setGraphics(const std::shared_ptr<gui::AbstractGraphics>& graphics)
+        {
+            _graphics = graphics;
+        }
+
+        void run(double run_time)
+        {
+            _clock = 0;
+            _run_time = run_time;
+
+            _graphics->init(*this);
+
+            while (!_graphics->done()) {
+                if (_clock <= _run_time || _run_time < 0 && !_graphics->pause()) {
+
+                    // for (auto& agent : _agents)
+                    //     agent->update();
+
+                    _clock += _time_step;
+                }
+
+                _graphics->refresh();
+            }
+        }
+
     protected:
         /* Collision Configuration */
         btDefaultCollisionConfiguration* _collisionConfiguration;
@@ -134,6 +165,15 @@ namespace robot_bullet {
 
         /* Collision Shapes */
         btAlignedObjectArray<btCollisionShape*> _collisionShapes;
+
+        /* Graphics */
+        std::shared_ptr<gui::AbstractGraphics> _graphics;
+
+        /* Simulation params */
+        double _time_step, _clock, _run_time;
+
+        /* Agents */
+        std::vector<Agent*> _agents;
     };
 } // namespace robot_bullet
 

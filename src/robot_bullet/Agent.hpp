@@ -32,7 +32,7 @@ namespace robot_bullet {
 
     struct AgentParams {
         AgentParams(const btScalar& pMass = 1.f, const btVector3& origin = btVector3(0.f, 0.f, 0.f), const btVector3& pBox = btVector3(1.f, 1.f, 1.f), const btScalar& pSphere = 1.f)
-            : mass(pMass), box(pBox), sphere(pSphere)
+            : mass(pMass), box(pBox), sphere(pSphere), material("default")
         {
             transform.setIdentity();
             transform.setOrigin(origin);
@@ -45,6 +45,8 @@ namespace robot_bullet {
         btScalar sphere;
         // Origin
         btTransform transform;
+        // Material
+        std::string material;
     };
 
     class Agent {
@@ -116,6 +118,9 @@ namespace robot_bullet {
 
                 // Add rigid body to the world simulation
                 simulator.getWorld()->addRigidBody(_rigidBody);
+
+                // Pass agent to simulator
+                simulator.addAgent(this);
             }
         }
 

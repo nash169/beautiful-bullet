@@ -16,7 +16,9 @@ namespace robot_bullet {
 
             ~MagnumGraphics();
 
-            void init(Simulator& sim) override;
+            void init(Simulator* sim) override
+            {
+            }
 
             bool done() override;
 
