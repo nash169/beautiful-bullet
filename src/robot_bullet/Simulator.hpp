@@ -1,6 +1,8 @@
 #ifndef ROBOT_BULLET_SIMULATOR_HPP
 #define ROBOT_BULLET_SIMULATOR_HPP
 
+#include <memory>
+
 #include <btBulletDynamicsCommon.h>
 
 #include <BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h>
@@ -120,7 +122,12 @@ namespace robot_bullet {
             _agents.push_back(agent);
         }
 
-        void setGraphics(const std::shared_ptr<gui::AbstractGraphics>& graphics)
+        std::vector<Agent*> getAgents()
+        {
+            return _agents;
+        }
+
+        void setGraphics(const std::shared_ptr<graphics::AbstractGraphics>& graphics)
         {
             _graphics = graphics;
         }
@@ -167,7 +174,7 @@ namespace robot_bullet {
         btAlignedObjectArray<btCollisionShape*> _collisionShapes;
 
         /* Graphics */
-        std::shared_ptr<gui::AbstractGraphics> _graphics;
+        std::shared_ptr<graphics::AbstractGraphics> _graphics;
 
         /* Simulation params */
         double _time_step, _clock, _run_time;

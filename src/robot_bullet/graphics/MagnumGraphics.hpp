@@ -18,6 +18,16 @@ namespace robot_bullet {
 
             void init(Simulator* sim) override
             {
+                for (auto& agent : sim->getAgents()) {
+                    if (agent->getType() & AgentType::BOX) {
+                    }
+                    else if (agent->getType() & AgentType::SPHERE) {
+                    }
+                }
+
+                for (size_t i = 0; i < sim->getWorld()->getNumMultibodies(); i++) {
+                    // sim->getWorld()->getMultiBody(i)
+                }
             }
 
             bool done() override;

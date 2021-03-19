@@ -12,18 +12,26 @@ using namespace robot_bullet;
 
 int main(int argc, char** argv)
 {
-    Simulator my_sim;
+    Simulator sim;
 
-    my_sim.addGround();
+    sim.addGround();
 
-    // Agent iiwa(my_sim, "models/iiwa/model.urdf");
+    Agent iiwa(sim, "models/iiwa/model.urdf");
 
-    // Cube 1
-    Agent cube1(my_sim, "box");
+    AgentParams cube_params(2.0, {0., 0., 0.}, {1, 2, 3});
+    Agent cube(sim, "box", cube_params);
 
-    // Cube 2
-    AgentParams cube_params(1.0, {1., 1., 1});
-    Agent cube2(my_sim, "box", cube_params);
+    btCollisionShape* temp = cube.getAgent()->getCollisionShape();
+
+    std::string str(temp->getName());
+
+    btBoxShape* box_shape = new btBoxShape({1, 2, 3});
+
+    std::cout << static_cast<btBoxShape*>(temp)->getHalfExtentsWithMargin().x() << " "
+              << static_cast<btBoxShape*>(temp)->getHalfExtentsWithMargin().y() << " "
+              << static_cast<btBoxShape*>(temp)->getHalfExtentsWithMargin().z() << std::endl;
+
+    std::cout << sim.getWorld()->getNumMultibodies() << std::endl;
 
     return 0;
 }
