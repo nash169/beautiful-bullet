@@ -16,11 +16,20 @@ def build(bld):
             sources.append(os.path.join(root, filename))
     sources = [f[len(bld.path.abspath()) + 1:] for f in sources]
 
-    # Define additional required libraries for the examples
-    example_required = {}  # { "eigval.cpp": [""] }
+    # External required libraries for the examples
+    example_required = {}  # { "multibody_sim.cpp": ["MAGNUMDYNAMICS"] }
+
+    # External optional libraries for the examples
+    example_optional = {"multibody_sim.cpp": ["MAGNUMDYNAMICS"]}
 
     # Compile all the examples
     for example in sources:
+        # Activate optional defines
+        if example in example_optional and set(example_optional[example]).issubset(bld.env["libs"]):
+            optional_defines = ["GRAPHICS"]
+        else:
+            optional_defines = [""]
+
         if example in example_required:
             if set(example_required[example]).issubset(bld.env["libs"]):
                 bld.program(
@@ -30,6 +39,7 @@ def build(bld):
                     includes=includes_path,
                     uselib=bld.env["libs"],
                     use=bld.env["libname"],
+                    defines=optional_defines,
                     cxxflags=bld.get_env()["CXXFLAGS"],
                     target=example[: len(example) - len(".cpp")],
                 )
@@ -41,6 +51,7 @@ def build(bld):
                 includes=includes_path,
                 uselib=bld.env["libs"],
                 use=bld.env["libname"],
+                defines=optional_defines,
                 cxxflags=bld.get_env()["CXXFLAGS"],
                 target=example[: len(example) - len(".cpp")],
             )

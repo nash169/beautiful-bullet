@@ -14,13 +14,15 @@ namespace robot_bullet {
 
             virtual ~AbstractGraphics() {}
 
-            virtual void init(Simulator& sim) {}
+            virtual void init(Simulator& sim)
+            {
+            }
 
             virtual bool done() { return _done; }
 
             virtual bool pause() { return _pause; }
 
-            virtual void refresh() {}
+            virtual bool refresh() {}
 
             virtual void setDesiredFPS(size_t desiredFPS) { _desired_fps = desiredFPS; }
 

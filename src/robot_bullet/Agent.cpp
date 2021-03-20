@@ -7,7 +7,6 @@ namespace robot_bullet {
     {
         // Check if we are loading an URDF model
         if (model.size() > 5 && !model.compare(model.size() - 5, 5, ".urdf")) {
-            std::cout << "Hello" << std::endl;
 
             importers::ImporterURDF importer;
 

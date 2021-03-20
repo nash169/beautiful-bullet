@@ -127,29 +127,32 @@ namespace robot_bullet {
             return _agents;
         }
 
-        void setGraphics(const std::shared_ptr<graphics::AbstractGraphics>& graphics)
+        void setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
         {
-            _graphics = graphics;
+            _graphics = std::move(graphics);
         }
 
-        void run(double run_time)
+        void run(double run_time = -1)
         {
+            // Reset clock
             _clock = 0;
-            _run_time = run_time;
 
             _graphics->init(*this);
 
-            while (!_graphics->done()) {
-                if (_clock <= _run_time || _run_time < 0 && !_graphics->pause()) {
-
-                    // for (auto& agent : _agents)
-                    //     agent->update();
-
-                    _clock += _time_step;
-                }
-
-                _graphics->refresh();
+            while (_graphics->refresh()) {
+                _dynamicsWorld->stepSimulation(_time_step, 0);
             }
+
+            // while (!_graphics->done()) {
+            //     if (_clock <= run_time || run_time < 0 && !_graphics->pause()) {
+
+            //
+
+            //         _clock += _time_step;
+            //     }
+
+            //     _graphics->refresh();
+            // }
         }
 
     protected:
@@ -174,7 +177,7 @@ namespace robot_bullet {
         btAlignedObjectArray<btCollisionShape*> _collisionShapes;
 
         /* Graphics */
-        std::shared_ptr<graphics::AbstractGraphics> _graphics;
+        std::unique_ptr<graphics::AbstractGraphics> _graphics;
 
         /* Simulation params */
         double _time_step, _clock, _run_time;

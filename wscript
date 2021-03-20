@@ -17,7 +17,7 @@ def options(opt):
     opt.load("compiler_cxx")
 
     # Load tools options
-    opt.load("flags bullet magnum x11", tooldir="waf_tools")
+    opt.load("flags bullet corrade magnum magnum_dynamics", tooldir="waf_tools")
 
     # Add options
     opt.add_option("--shared",
@@ -49,7 +49,7 @@ def configure(cfg):
     cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common,BulletInverseDynamicsUtils"
 
     # Load tools configuration
-    cfg.load("flags bullet corrade magnum", tooldir="waf_tools")
+    cfg.load("flags bullet corrade magnum magnum_dynamics", tooldir="waf_tools")
 
     # Remove duplicates
     cfg.get_env()["libs"] = list(set(cfg.get_env()["libs"]))
