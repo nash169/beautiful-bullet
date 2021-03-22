@@ -23,7 +23,7 @@ int main(int argc, char** argv)
 
     // Agent iiwa(sim, "models/iiwa/model.urdf");
 
-    AgentParams cube_params(2.0, {0., 0., 5.}, {1, 2, 3});
+    AgentParams cube_params(2.0, {0., 0., 5.}, {0.5, 0.5, 0.5});
     Agent cube(sim, "box", cube_params);
 
     // std::cout << temp.size() << std::endl;

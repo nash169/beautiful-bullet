@@ -88,8 +88,8 @@ namespace robot_bullet {
 
         void addGround()
         {
-            ///create a ground
-            btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(150.), btScalar(25.), btScalar(150.)));
+            ///create a ground 4.0f, 0.5f, 4.0f - btVector3(btScalar(150.), btScalar(25.), btScalar(150.))
+            btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(4.), btScalar(0.5), btScalar(4.)));
 
             _collisionShapes.push_back(groundShape);
 

@@ -36,10 +36,8 @@ namespace robot_bullet {
                 // Create ground if present
                 if (sim.getGround()) {
                     btVector3 dimension = static_cast<btBoxShape*>(sim.getGround()->getCollisionShape())->getHalfExtentsWithMargin();
-                    std::cout << dimension.x() << " "
-                              << dimension.y() << " "
-                              << dimension.z() << std::endl;
-                    _app->add("cube", "", Matrix4::scaling({dimension.x(), dimension.y(), dimension.z()}), 0xffffff_rgbf);
+
+                    _app->add("cube", "", Matrix4::scaling(Vector3(dimension)), 0xffffff_rgbf);
 
                     auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
                     sim.getGround()->setMotionState(&motionState->btMotionState());
@@ -56,15 +54,18 @@ namespace robot_bullet {
 
                             btQuaternion orientation = agent->getBody()->getOrientation();
 
-                            // _app->add("cube", "", Matrix4::scaling({2.0f, 1.0, 1.0f}), 0xff0000_rgbf);
-                            _app->add("cube", "", Matrix4::scaling({2.0f, 1.0, 1.0f}), 0x00ff00_rgbf);
+                            _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation({origin.x(), origin.z(), origin.y()}) * Matrix4::scaling(Vector3(dimension)), Color4::blue());
                         }
                         else if (agent->getType() & AgentType::SPHERE) {
                         }
 
                         auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
-                        // agent->getBody()->setWorldTransform(btTransform(_app->getObjects().back()->transformationMatrix()));
-                        // agent->getBody()->setMotionState(&motionState->btMotionState());
+                        agent->getBody()->setMotionState(&motionState->btMotionState());
+
+                        // This should not be called
+                        agent->getBody()->setCollisionFlags(agent->getBody()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+
+                        agent->getBody()->setWorldTransform(btTransform(_app->getObjects().back()->transformationMatrix()));
                     }
                 }
             }
