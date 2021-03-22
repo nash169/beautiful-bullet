@@ -31,8 +31,8 @@ namespace robot_bullet {
     CORRADE_ENUMSET_OPERATORS(AgentTypes)
 
     struct AgentParams {
-        AgentParams(const btScalar& pMass = 1.f, const btVector3& origin = btVector3(0.f, 0.f, 0.f), const btVector3& pBox = btVector3(1.f, 1.f, 1.f), const btScalar& pSphere = 1.f)
-            : mass(pMass), box(pBox), sphere(pSphere), material("white")
+        AgentParams(const btScalar& pMass = 1.f, const std::string& mat = "red", const btVector3& origin = btVector3(0.f, 0.f, 0.f), const btVector3& pBox = btVector3(0.5f, 0.5f, 0.5f), const btScalar& pSphere = 1.f)
+            : mass(pMass), box(pBox), sphere(pSphere), material(mat)
         {
             transform.setIdentity();
             transform.setOrigin(origin);

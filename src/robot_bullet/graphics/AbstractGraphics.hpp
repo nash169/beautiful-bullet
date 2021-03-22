@@ -22,7 +22,7 @@ namespace robot_bullet {
 
             virtual bool pause() { return _pause; }
 
-            virtual bool refresh() {}
+            virtual bool refresh() { return true; }
 
             virtual void setDesiredFPS(size_t desiredFPS) { _desired_fps = desiredFPS; }
 

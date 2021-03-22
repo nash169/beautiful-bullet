@@ -19,12 +19,15 @@ int main(int argc, char** argv)
     sim.setGraphics(std::make_unique<graphics::MagnumGraphics>());
 #endif
 
-    sim.addGround();
+    // sim.addGround();
 
     // Agent iiwa(sim, "models/iiwa/model.urdf");
 
-    AgentParams cube_params(2.0, {0., 0., 5.}, {0.5, 0.5, 0.5});
+    AgentParams cube_params(0.0, "green", {0., 0., 0.}, {1., 1., 1.});
+    AgentParams cube_params2(1.0, "blue", {0., 10., 0.}, {1., 1., 1.});
+
     Agent cube(sim, "box", cube_params);
+    Agent cube2(sim, "box", cube_params2);
 
     // std::cout << temp.size() << std::endl;
 

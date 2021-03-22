@@ -15,6 +15,16 @@ namespace robot_bullet {
     namespace graphics {
         using namespace magnum_dynamics;
 
+        Color4 getColor(const std::string& color)
+        {
+            if (!color.compare("red"))
+                return Color4::red();
+            else if (!color.compare("green"))
+                return Color4::green();
+            else if (!color.compare("blue"))
+                return Color4::blue();
+        }
+
         class MagnumGraphics : public AbstractGraphics {
         public:
             MagnumGraphics() : _done(false), _pause(false)
@@ -35,12 +45,16 @@ namespace robot_bullet {
 
                 // Create ground if present
                 if (sim.getGround()) {
-                    btVector3 dimension = static_cast<btBoxShape*>(sim.getGround()->getCollisionShape())->getHalfExtentsWithMargin();
+                    btVector3 dimension = static_cast<btBoxShape*>(sim.getGround()->getCollisionShape())->getHalfExtentsWithMargin(),
+                              origin = sim.getGround()->getCenterOfMassPosition();
 
-                    _app->add("cube", "", Matrix4::scaling(Vector3(dimension)), 0xffffff_rgbf);
+                    btQuaternion orientation = sim.getGround()->getOrientation();
+
+                    _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)) * Matrix4::scaling(Vector3(dimension)), 0xffffff_rgbf);
 
                     auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
                     sim.getGround()->setMotionState(&motionState->btMotionState());
+                    // sim.getGround()->setCollisionFlags(sim.getGround()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
                     sim.getGround()->setWorldTransform(btTransform(_app->getObjects().back()->transformationMatrix()));
                 }
 
@@ -54,7 +68,7 @@ namespace robot_bullet {
 
                             btQuaternion orientation = agent->getBody()->getOrientation();
 
-                            _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation({origin.x(), origin.z(), origin.y()}) * Matrix4::scaling(Vector3(dimension)), Color4::blue());
+                            _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), getColor(agent->getParams().material));
                         }
                         else if (agent->getType() & AgentType::SPHERE) {
                         }
@@ -63,9 +77,9 @@ namespace robot_bullet {
                         agent->getBody()->setMotionState(&motionState->btMotionState());
 
                         // This should not be called
-                        agent->getBody()->setCollisionFlags(agent->getBody()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+                        // agent->getBody()->setCollisionFlags(agent->getBody()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 
-                        agent->getBody()->setWorldTransform(btTransform(_app->getObjects().back()->transformationMatrix()));
+                        // agent->getBody()->setWorldTransform(btTransform(_app->getObjects().back()->transformationMatrix()));
                     }
                 }
             }

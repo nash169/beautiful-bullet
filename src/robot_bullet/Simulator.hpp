@@ -95,8 +95,8 @@ namespace robot_bullet {
 
             btTransform groundTransform;
             groundTransform.setIdentity();
-            groundTransform.setOrigin(btVector3(0, -40, 0));
-            groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0.));
+            groundTransform.setOrigin(btVector3(0, 0, 0));
+            // groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0.));
             //We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
             btScalar mass(0.);
 
@@ -145,7 +145,10 @@ namespace robot_bullet {
             _graphics->init(*this);
 
             while (_graphics->refresh()) {
-                _dynamicsWorld->stepSimulation(_time_step, 0);
+                _dynamicsWorld->stepSimulation(1.f / 60.f);
+                // std::cout << _agents[1]->getBody()->getCenterOfMassPosition().x() << " "
+                //   << _agents[1]->getBody()->getCenterOfMassPosition().y() << " "
+                //   << _agents[1]->getBody()->getCenterOfMassPosition().z() << std::endl;
             }
 
             // while (!_graphics->done()) {

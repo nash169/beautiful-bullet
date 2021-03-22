@@ -39,9 +39,11 @@ namespace robot_bullet {
             if (!model.compare("box")) {
                 /* Set box type */
                 _type = AgentType::BOX;
+
                 /* Create box shape */
                 btBoxShape* box_shape = new btBoxShape(_params.box);
                 simulator.getCollisionShapes().push_back(box_shape);
+
                 /* Create box rigid body */
                 _rigidBody = createRigidBody(_params.mass, _params.transform, box_shape);
                 /* don't know yet */
@@ -108,7 +110,7 @@ namespace robot_bullet {
 
         btRigidBody* body = new btRigidBody(cInfo);
 
-        body->setUserIndex(-1);
+        // body->setUserIndex(-1);
 
         // _rigidBody->forceActivationState(DISABLE_DEACTIVATION);
 
