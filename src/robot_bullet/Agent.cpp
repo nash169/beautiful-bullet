@@ -11,10 +11,6 @@ namespace robot_bullet {
             importers::ImporterURDF importer;
 
             if (importer.loadURDF(model.c_str())) {
-                int rootLinkIndex = importer.getRootLinkIndex();
-
-                b3Printf("urdf root link index = %d\n", rootLinkIndex);
-
                 utils::MultiBodyCreator mb_creator;
 
                 btTransform identityTrans;
@@ -34,8 +30,9 @@ namespace robot_bullet {
                     //temporarily set some extreme damping factors until we have some joint control or constraints
                     _multiBody->setAngularDamping(0 * 0.99);
                     _multiBody->setLinearDamping(0 * 0.99);
-                    b3Printf("Root link name = %s", importer.getLinkName(importer.getRootLinkIndex()).c_str());
                 }
+
+                _visual_meshes = importer.getLinkMeshes();
             }
         }
         else {

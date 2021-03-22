@@ -110,11 +110,11 @@ namespace robot_bullet {
             //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
             btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
             btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
-            btRigidBody* body = new btRigidBody(rbInfo);
-            body->setFriction(0.5);
+            _ground = new btRigidBody(rbInfo);
+            _ground->setFriction(0.5);
 
             //add the ground to the dynamics world
-            _dynamicsWorld->addRigidBody(body, 1, 1 + 2);
+            _dynamicsWorld->addRigidBody(_ground, 1, 1 + 2);
         }
 
         void addAgent(Agent* agent)
@@ -125,6 +125,11 @@ namespace robot_bullet {
         std::vector<Agent*> getAgents()
         {
             return _agents;
+        }
+
+        btRigidBody* getGround()
+        {
+            return _ground;
         }
 
         void setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
@@ -181,6 +186,9 @@ namespace robot_bullet {
 
         /* Simulation params */
         double _time_step, _clock, _run_time;
+
+        /* Ground */
+        btRigidBody* _ground;
 
         /* Agents */
         std::vector<Agent*> _agents;

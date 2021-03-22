@@ -1,6 +1,8 @@
 #ifndef ROBOT_BULLET_IMPORTERS_PARSER_URDF_H
 #define ROBOT_BULLET_IMPORTERS_PARSER_URDF_H
 
+#include <iostream>
+
 #include <list>
 #include <stdlib.h>
 #include <string>

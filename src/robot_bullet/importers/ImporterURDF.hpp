@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <Bullet3Common/b3FileUtils.h>
 #include <btBulletCollisionCommon.h>
@@ -128,6 +129,8 @@ namespace robot_bullet {
             int getNumAllocatedCollisionShapes() const;
 
             btCollisionShape* getAllocatedCollisionShape(int index);
+
+            std::vector<std::vector<std::string>> getLinkMeshes();
 
         protected:
             BulletURDFInternalData* m_data;

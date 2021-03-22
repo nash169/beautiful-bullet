@@ -8,7 +8,7 @@
 #include <LinearMath/btVector3.h>
 
 #include <BulletCollision/btBulletCollisionCommon.h>
-#include <InverseDynamics/btMultiBodyTreeCreator.hpp>
+// #include <InverseDynamics/btMultiBodyTreeCreator.hpp>
 
 #include <robot_bullet/importers/ImporterURDF.hpp>
 #include <robot_bullet/utils/MultiBodyCreator.hpp>
@@ -66,6 +66,7 @@ namespace robot_bullet {
     protected:
         // Bullet MultiBody Object
         btMultiBody* _multiBody;
+        std::vector<std::vector<std::string>> _visual_meshes;
 
         // Bullet Rigid Body Object
         btRigidBody* _rigidBody;

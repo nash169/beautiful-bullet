@@ -21,10 +21,12 @@ int main(int argc, char** argv)
 
     sim.addGround();
 
-    Agent iiwa(sim, "models/iiwa/model.urdf");
+    // Agent iiwa(sim, "models/iiwa/model.urdf");
 
-    AgentParams cube_params(2.0, {0., 0., 0.}, {1, 2, 3});
+    AgentParams cube_params(2.0, {0., 0., 5.}, {1, 2, 3});
     Agent cube(sim, "box", cube_params);
+
+    // std::cout << temp.size() << std::endl;
 
     // btCollisionShape* temp = cube.getBody()->getCollisionShape();
 
