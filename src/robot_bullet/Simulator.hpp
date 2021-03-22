@@ -72,6 +72,9 @@ namespace robot_bullet {
 
             // set world gravity
             _dynamicsWorld->setGravity(btVector3(0, -9.81, 0));
+
+            // time-step
+            _time_step = 0.001;
         }
 
         ~Simulator() {}
@@ -144,11 +147,14 @@ namespace robot_bullet {
 
             _graphics->init(*this);
 
-            while (_graphics->refresh()) {
-                _dynamicsWorld->stepSimulation(1.f / 60.f);
-                // std::cout << _agents[1]->getBody()->getCenterOfMassPosition().x() << " "
-                //   << _agents[1]->getBody()->getCenterOfMassPosition().y() << " "
-                //   << _agents[1]->getBody()->getCenterOfMassPosition().z() << std::endl;
+            uint8_t step = 0;
+            uint8_t g_step = std::ceil(40. / _time_step); // 40Hz graphics
+            while (true) {
+                _dynamicsWorld->stepSimulation(_time_step);
+                if (step % g_step == 0)
+                    if (!_graphics->refresh())
+                        break;
+                step++;
             }
 
             // while (!_graphics->done()) {
