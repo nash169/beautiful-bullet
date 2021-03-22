@@ -23,6 +23,8 @@ namespace robot_bullet {
                 return Color4::green();
             else if (!color.compare("blue"))
                 return Color4::blue();
+            else
+                return Color4::red();
         }
 
         class MagnumGraphics : public AbstractGraphics {
@@ -50,12 +52,10 @@ namespace robot_bullet {
 
                     btQuaternion orientation = sim.getGround()->getOrientation();
 
-                    _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)) * Matrix4::scaling(Vector3(dimension)), 0xffffff_rgbf);
+                    _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), 0xffffff_rgbf, Matrix4::scaling(Vector3(dimension)));
 
                     auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
                     sim.getGround()->setMotionState(&motionState->btMotionState());
-                    // sim.getGround()->setCollisionFlags(sim.getGround()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-                    sim.getGround()->setWorldTransform(btTransform(_app->getObjects().back()->transformationMatrix()));
                 }
 
                 for (auto& agent : sim.getAgents()) {
@@ -68,18 +68,13 @@ namespace robot_bullet {
 
                             btQuaternion orientation = agent->getBody()->getOrientation();
 
-                            _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), getColor(agent->getParams().material));
+                            _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), getColor(agent->getParams().material), Matrix4::scaling(Vector3(dimension)));
                         }
                         else if (agent->getType() & AgentType::SPHERE) {
                         }
 
                         auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
                         agent->getBody()->setMotionState(&motionState->btMotionState());
-
-                        // This should not be called
-                        // agent->getBody()->setCollisionFlags(agent->getBody()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-
-                        // agent->getBody()->setWorldTransform(btTransform(_app->getObjects().back()->transformationMatrix()));
                     }
                 }
             }
