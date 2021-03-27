@@ -2,6 +2,8 @@
 #define ROBOT_BULLET_AGENT_HPP
 
 #include <iostream>
+#include <unordered_map>
+
 // Corrade
 #include <Corrade/Containers/EnumSet.h>
 
@@ -134,6 +136,25 @@ namespace robot_bullet {
             return transformations;
         }
 
+        btTransform* getBodyTransform(int index)
+        {
+            btInverseDynamicsBullet3::mat33* world_T_body = new btInverseDynamicsBullet3::mat33();
+            btInverseDynamicsBullet3::vec3* world_origin = new btInverseDynamicsBullet3::vec3();
+
+            _inverseModel->getBodyOrigin(index, world_origin);
+            _inverseModel->getBodyTransform(index, world_T_body);
+
+            btTransform* tr = new btTransform(*static_cast<btMatrix3x3*>(world_T_body));
+            tr->setOrigin(*static_cast<btVector3*>(world_origin));
+
+            return tr;
+        }
+
+        std::unordered_map<std::string, btTransform*> getMapTransform()
+        {
+            return _bodyTransform;
+        }
+
         void update()
         {
             if (_multiBody) {
@@ -148,6 +169,13 @@ namespace robot_bullet {
 
                     _inverseModel->calculatePositionAndVelocityKinematics(q, qdot);
                 }
+
+                // Update body tranformation for graphics
+                size_t index = 0;
+                for (auto itr = _bodyTransform.begin(); itr != _bodyTransform.end(); ++itr) {
+                    itr->second = getBodyTransform(index);
+                    index++;
+                }
             }
         }
 
@@ -156,6 +184,8 @@ namespace robot_bullet {
         btMultiBody* _multiBody = nullptr;
         btInverseDynamics::MultiBodyTree* _inverseModel = nullptr;
         std::vector<importers::LinkVisual> _links_visual;
+        // std::vector<btTransform*> _bodyTransform;
+        std::unordered_map<std::string, btTransform*> _bodyTransform;
 
         // Bullet Rigid Body Object
         btRigidBody* _rigidBody = nullptr;

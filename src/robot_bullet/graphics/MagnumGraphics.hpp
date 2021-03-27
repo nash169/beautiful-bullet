@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <memory>
+#include <string>
 
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
@@ -61,18 +62,26 @@ namespace robot_bullet {
                 // Add agents
                 for (auto& agent : sim.getAgents()) {
                     if (agent->getType() & AgentType::MULTIBODY) {
+                        // Body transformations
                         std::vector<btTransform> tr = agent->getLinkPos2();
+
+                        // Visual meshes
                         std::vector<importers::LinkVisual> vis = agent->getVisual();
 
-                        for (size_t i = 0; i < tr.size(); i++)
-                            for (size_t j = 0; j < vis[i].getNumMeshes(); j++)
-                                _app->add(vis[i].meshes[j], "", Matrix4(tr[i]));
+                        for (size_t i = 0; i < vis.size(); i++) {
+                            // Store number of meshes before adding new element
+                            int num_obj = _app->getNumObjects();
 
-                        // for (auto& link : agent->getVisual()) {
-                        //     std::cout << "Link name: " << link.id << std::endl;
-                        //     for (size_t i = 0; i < link.getNumMeshes(); i++)
-                        //         std::cout << "  Mesh " << i << ": " << link.meshes[i] << std::endl;
-                        // }
+                            // Add all the meshes belonging to a body
+                            for (size_t j = 0; j < vis[i].getNumMeshes(); j++) {
+                                _app->add(vis[i].meshes[j], "", Matrix4(tr[i]));
+                            }
+
+                            // _multibody_map[vis[i].id] = std::vector<Object3D*>(_app->getObjects().begin() + num_obj, _app->getObjects().begin() + _app->getNumObjects());
+                        }
+
+                        std::unordered_map<std::string, btTransform*> agent_tr = agent->getMapTransform();
+                        _multibody_transform.insert(agent_tr.begin(), agent_tr.end());
                     }
                     else if (agent->getType() & AgentType::RIGIDBODY) {
                         if (agent->getType() & AgentType::BOX) {
@@ -111,6 +120,9 @@ namespace robot_bullet {
             bool _done, _pause;
 
             MagnumApp* _app;
+
+            std::unordered_map<std::string, std::vector<Object3D*>> _multibody_map;
+            std::unordered_map<std::string, btTransform*> _multibody_transform;
         };
     } // namespace graphics
 } // namespace robot_bullet

@@ -145,7 +145,7 @@ namespace robot_bullet {
 
             btCollisionShape* getAllocatedCollisionShape(int index);
 
-            std::vector<LinkVisual> getLinkMeshes();
+            std::vector<LinkVisual> getLinkVisual();
 
         protected:
             BulletURDFInternalData* m_data;

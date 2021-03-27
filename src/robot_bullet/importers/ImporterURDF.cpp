@@ -5,7 +5,7 @@ namespace robot_bullet {
     namespace importers {
         static btScalar gUrdfDefaultCollisionMargin = 0.001;
 
-        std::vector<LinkVisual> ImporterURDF::getLinkMeshes()
+        std::vector<LinkVisual> ImporterURDF::getLinkVisual()
         {
             size_t num_links = m_data->m_urdfParser.getModel().m_links.size();
 
