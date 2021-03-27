@@ -7,6 +7,8 @@ namespace robot_bullet {
     {
         // Check if we are loading an URDF model
         if (model.size() > 5 && !model.compare(model.size() - 5, 5, ".urdf")) {
+            /* Set multibody type */
+            _type = AgentType::MULTIBODY;
 
             importers::ImporterURDF importer;
 
@@ -32,7 +34,17 @@ namespace robot_bullet {
                     _multiBody->setLinearDamping(0 * 0.99);
                 }
 
-                _visual_meshes = importer.getLinkMeshes();
+                // Add inverse dynamics model
+                btInverseDynamics::btMultiBodyTreeCreator id_creator;
+                if (-1 != id_creator.createFromBtMultiBody(_multiBody, false)) {
+                    _inverseModel = btInverseDynamics::CreateMultiBodyTree(id_creator);
+                }
+
+                // Store visual information
+                _links_visual = importer.getLinkMeshes();
+
+                // Pass agent to simulator
+                simulator.addAgent(this);
             }
         }
         else {

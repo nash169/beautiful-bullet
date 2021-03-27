@@ -1,6 +1,7 @@
 #ifndef ROBOT_BULLET_SIMULATOR_HPP
 #define ROBOT_BULLET_SIMULATOR_HPP
 
+#include <cmath>
 #include <memory>
 
 #include <btBulletDynamicsCommon.h>
@@ -71,7 +72,7 @@ namespace robot_bullet {
             _dynamicsWorld = new btMultiBodyDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
 
             // set world gravity
-            _dynamicsWorld->setGravity(btVector3(0, -9.81, 0));
+            _dynamicsWorld->setGravity(btVector3(0, 0, -9.81));
 
             // time-step
             _time_step = 0.001;
@@ -92,13 +93,13 @@ namespace robot_bullet {
         void addGround()
         {
             ///create a ground 4.0f, 0.5f, 4.0f - btVector3(btScalar(150.), btScalar(25.), btScalar(150.))
-            btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(4.), btScalar(0.5), btScalar(4.)));
+            btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(4.), btScalar(4.), btScalar(0.5)));
 
             _collisionShapes.push_back(groundShape);
 
             btTransform groundTransform;
             groundTransform.setIdentity();
-            groundTransform.setOrigin(btVector3(0, 0, 0));
+            groundTransform.setOrigin(btVector3(0, 0, -0.5));
             // groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0.));
             //We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
             btScalar mass(0.);
@@ -156,17 +157,6 @@ namespace robot_bullet {
                         break;
                 step++;
             }
-
-            // while (!_graphics->done()) {
-            //     if (_clock <= run_time || run_time < 0 && !_graphics->pause()) {
-
-            //
-
-            //         _clock += _time_step;
-            //     }
-
-            //     _graphics->refresh();
-            // }
         }
 
     protected:
@@ -197,7 +187,7 @@ namespace robot_bullet {
         double _time_step, _clock, _run_time;
 
         /* Ground */
-        btRigidBody* _ground;
+        btRigidBody* _ground = nullptr;
 
         /* Agents */
         std::vector<Agent*> _agents;

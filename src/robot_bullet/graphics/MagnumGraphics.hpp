@@ -45,21 +45,34 @@ namespace robot_bullet {
 
                 _app = new MagnumApp({argc, argv});
 
-                // Create ground if present
+                // Add ground if present
                 if (sim.getGround()) {
                     btVector3 dimension = static_cast<btBoxShape*>(sim.getGround()->getCollisionShape())->getHalfExtentsWithMargin(),
                               origin = sim.getGround()->getCenterOfMassPosition();
 
                     btQuaternion orientation = sim.getGround()->getOrientation();
 
-                    _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), 0xffffff_rgbf, Matrix4::scaling(Vector3(dimension)));
+                    _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), 0x000ff0_rgbf, Matrix4::scaling(Vector3(dimension)));
 
                     auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
                     sim.getGround()->setMotionState(&motionState->btMotionState());
                 }
 
+                // Add agents
                 for (auto& agent : sim.getAgents()) {
                     if (agent->getType() & AgentType::MULTIBODY) {
+                        std::vector<btTransform> tr = agent->getLinkPos2();
+                        std::vector<importers::LinkVisual> vis = agent->getVisual();
+
+                        for (size_t i = 0; i < tr.size(); i++)
+                            for (size_t j = 0; j < vis[i].getNumMeshes(); j++)
+                                _app->add(vis[i].meshes[j], "", Matrix4(tr[i]));
+
+                        // for (auto& link : agent->getVisual()) {
+                        //     std::cout << "Link name: " << link.id << std::endl;
+                        //     for (size_t i = 0; i < link.getNumMeshes(); i++)
+                        //         std::cout << "  Mesh " << i << ": " << link.meshes[i] << std::endl;
+                        // }
                     }
                     else if (agent->getType() & AgentType::RIGIDBODY) {
                         if (agent->getType() & AgentType::BOX) {

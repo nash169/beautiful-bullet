@@ -21,13 +21,13 @@ int main(int argc, char** argv)
 
     sim.addGround();
 
-    // Agent iiwa(sim, "models/iiwa/model.urdf");
+    Agent iiwa(sim, "models/iiwa/model.urdf");
 
-    AgentParams cube_params(1.0, "green", {0., 5., 0.}, {0.5, 0.5, 0.5});
-    AgentParams cube_params2(1.0, "blue", {0., 10., 0.}, {1., 1., 1.});
+    // AgentParams cube_params(1.0, "green", {0., 0., 5.}, {0.5, 0.5, 0.5});
+    // AgentParams cube_params2(1.0, "blue", {0., 0, 15.}, {1., 1., 1.});
 
-    Agent cube(sim, "box", cube_params);
-    Agent cube2(sim, "box", cube_params2);
+    // Agent cube(sim, "box", cube_params);
+    // Agent cube2(sim, "box", cube_params2);
 
     // std::cout << temp.size() << std::endl;
 
@@ -44,6 +44,21 @@ int main(int argc, char** argv)
     //           << static_cast<btBoxShape*>(temp)->getHalfExtentsWithMargin().z() << std::endl;
 
     // std::cout << sim.getWorld()->getNumMultibodies() << std::endl;
+
+    // for (size_t i = 0; i < iiwa.getMultiBody()->getNumLinks(); i++) {
+    //     std::cout << "Link " << i << ": " << iiwa.getMultiBody()->getRVector(i).x() << " "
+    //               << iiwa.getMultiBody()->getRVector(i).y() << " "
+    //               << iiwa.getMultiBody()->getRVector(i).z() << std::endl;
+    // }
+
+    // std::cout << "Link " << 5 << ": " << iiwa.getMultiBody()->getBasePos().x() << " "
+    //           << iiwa.getMultiBody()->getBasePos().y() << " "
+    //           << iiwa.getMultiBody()->getBasePos().z() << std::endl;
+
+    // btInverseDynamicsBullet3::mat33* world_T_body = new btInverseDynamicsBullet3::mat33();
+    // iiwa.update();
+    // std::cout << iiwa.getInverseModel()->getBodyTransform(0, world_T_body) << std::endl;
+    // btTransform temp(*static_cast<btMatrix3x3*>(world_T_body));
 
     sim.run();
 

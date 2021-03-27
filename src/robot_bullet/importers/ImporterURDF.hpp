@@ -87,6 +87,21 @@ namespace robot_bullet {
             }
         };
 
+        /* URDF visual information 
+        <geometry> -> shapes and meshes
+        <material> ->  colors and textures */
+        struct LinkVisual {
+            // Link name
+            std::string id;
+
+            std::vector<std::string> meshes, colors, textures;
+
+            inline int getNumMeshes()
+            {
+                return meshes.size();
+            }
+        };
+
         class ImporterURDF {
         public:
             ImporterURDF(interfaces::FileIOInterface* fileIO = 0, double globalScaling = 1, int flags = 0)
@@ -130,7 +145,7 @@ namespace robot_bullet {
 
             btCollisionShape* getAllocatedCollisionShape(int index);
 
-            std::vector<std::vector<std::string>> getLinkMeshes();
+            std::vector<LinkVisual> getLinkMeshes();
 
         protected:
             BulletURDFInternalData* m_data;

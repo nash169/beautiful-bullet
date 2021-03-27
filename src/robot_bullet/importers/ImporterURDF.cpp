@@ -5,22 +5,25 @@ namespace robot_bullet {
     namespace importers {
         static btScalar gUrdfDefaultCollisionMargin = 0.001;
 
-        std::vector<std::vector<std::string>> ImporterURDF::getLinkMeshes()
+        std::vector<LinkVisual> ImporterURDF::getLinkMeshes()
         {
-            std::vector<std::vector<std::string>> links_meshes;
+            size_t num_links = m_data->m_urdfParser.getModel().m_links.size();
 
-            for (size_t i = 0; i < m_data->m_urdfParser.getModel().m_links.size(); i++) {
-                std::vector<std::string> meshes;
+            std::vector<LinkVisual> link(num_links);
 
+            for (size_t i = 0; i < num_links; i++) {
+                // Get link name
+                link[i].id = m_data->m_urdfParser.getModel().m_links.getKeyAtIndex(i).m_string1;
+
+                // Get link pointer
                 UrdfLink* linkPtr = *m_data->m_urdfParser.getModel().m_links.getAtIndex(i);
 
+                // Store path of all the visual messhes
                 for (size_t j = 0; j < linkPtr->m_visualArray.size(); j++)
-                    meshes.push_back(linkPtr->m_visualArray[j].m_geometry.m_meshFileName);
-
-                // links_meshes.push_back(links_meshes);
+                    link[i].meshes.push_back(linkPtr->m_visualArray[j].m_geometry.m_meshFileName);
             }
 
-            return links_meshes;
+            return link;
         }
 
         bool ImporterURDF::loadURDF(const char* fileName, bool forceFixedBase)

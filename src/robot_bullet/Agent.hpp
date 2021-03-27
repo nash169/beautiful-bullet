@@ -7,8 +7,9 @@
 
 #include <LinearMath/btVector3.h>
 
+#include "BulletInverseDynamics/IDConfig.hpp"
 #include <BulletCollision/btBulletCollisionCommon.h>
-// #include <InverseDynamics/btMultiBodyTreeCreator.hpp>
+#include <InverseDynamics/btMultiBodyTreeCreator.hpp>
 
 #include <robot_bullet/importers/ImporterURDF.hpp>
 #include <robot_bullet/utils/MultiBodyCreator.hpp>
@@ -63,13 +64,101 @@ namespace robot_bullet {
 
         AgentTypes& getType();
 
+        std::vector<importers::LinkVisual> getVisual()
+        {
+            return _links_visual;
+        }
+
+        btMultiBody* getMultiBody()
+        {
+            return _multiBody;
+        }
+
+        btInverseDynamics::MultiBodyTree* getInverseModel()
+        {
+            return _inverseModel;
+        }
+
+        std::vector<btTransform> getLinkPos()
+        {
+            std::vector<btTransform> transformations(_multiBody->getNumLinks());
+
+            transformations[0] = _multiBody->getBaseWorldTransform();
+
+            btTransform tr = transformations[0];
+            btVector3 origin = _multiBody->getBasePos();
+
+            for (size_t i = 1; i < transformations.size(); i++) {
+                transformations[i].setIdentity();
+                transformations[i].setOrigin(_multiBody->localDirToWorld(i - 1, {0, 0, 0}));
+                // transformations[i].setRotation(_multiBody->getParentToLocalRot(i - 1));
+                // transformations[i] = transformations[i] * tr;
+                // tr = transformations[i];
+            }
+
+            return transformations;
+        }
+
+        std::vector<btTransform> getLinkPos2()
+        {
+            update();
+
+            std::vector<btTransform> transformations(_multiBody->getNumLinks());
+
+            // for (size_t i = 0; i < transformations.size(); i++) {
+            //     btInverseDynamicsBullet3::mat33* world_T_body = new btInverseDynamicsBullet3::mat33();
+            //     btInverseDynamicsBullet3::vec3* world_origin = new btInverseDynamicsBullet3::vec3();
+
+            //     _inverseModel->getBodyOrigin(i, world_origin);
+            //     _inverseModel->getBodyTransform(i, world_T_body);
+
+            //     transformations[i].setOrigin(*static_cast<btVector3*>(world_origin));
+
+            //     btQuaternion q;
+            //     (*static_cast<btMatrix3x3*>(world_T_body)).getRotation(q);
+            //     transformations[i].setRotation(q);
+            // }
+
+            for (size_t i = 0; i < transformations.size(); i++) {
+                btInverseDynamicsBullet3::mat33* world_T_body = new btInverseDynamicsBullet3::mat33();
+                btInverseDynamicsBullet3::vec3* world_origin = new btInverseDynamicsBullet3::vec3();
+
+                _inverseModel->getBodyOrigin(i, world_origin);
+                _inverseModel->getBodyTransform(i, world_T_body);
+
+                btTransform tr(*static_cast<btMatrix3x3*>(world_T_body));
+                tr.setOrigin(*static_cast<btVector3*>(world_origin));
+                transformations[i] = tr;
+            }
+
+            return transformations;
+        }
+
+        void update()
+        {
+            if (_multiBody) {
+                const int num_dofs = _multiBody->getNumDofs();
+                if (_inverseModel) {
+                    btInverseDynamics::vecx qdot(num_dofs), q(num_dofs);
+
+                    for (int dof = 0; dof < num_dofs; dof++) {
+                        q(dof) = _multiBody->getJointPos(dof);
+                        qdot(dof) = _multiBody->getJointVel(dof);
+                    }
+
+                    _inverseModel->calculatePositionAndVelocityKinematics(q, qdot);
+                }
+            }
+        }
+
     protected:
         // Bullet MultiBody Object
-        btMultiBody* _multiBody;
-        std::vector<std::vector<std::string>> _visual_meshes;
+        btMultiBody* _multiBody = nullptr;
+        btInverseDynamics::MultiBodyTree* _inverseModel = nullptr;
+        std::vector<importers::LinkVisual> _links_visual;
 
         // Bullet Rigid Body Object
-        btRigidBody* _rigidBody;
+        btRigidBody* _rigidBody = nullptr;
 
         // Agent name
         std::string _name;
