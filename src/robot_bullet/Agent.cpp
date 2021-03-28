@@ -40,17 +40,18 @@ namespace robot_bullet {
                     _inverseModel = btInverseDynamics::CreateMultiBodyTree(id_creator);
                 }
 
-                // Update model
-
                 // Store visual information
                 _links_visual = importer.getLinkVisual();
 
-                // Store transformations
+                // Init transformations
                 for (size_t i = 0; i < _links_visual.size(); i++)
-                    _bodyTransform[_links_visual[i].id] = getBodyTransform(i);
+                    _bodyTransform[_links_visual[i].id] = nullptr;
 
                 // Pass agent to simulator
                 simulator.addAgent(this);
+
+                // Update model
+                update();
             }
         }
         else {

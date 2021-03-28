@@ -62,8 +62,8 @@ namespace robot_bullet {
                 // Add agents
                 for (auto& agent : sim.getAgents()) {
                     if (agent->getType() & AgentType::MULTIBODY) {
-                        // Body transformations
-                        std::vector<btTransform> tr = agent->getLinkPos2();
+                        // // Body transformations
+                        // std::vector<btTransform> tr = agent->getLinkPos2();
 
                         // Visual meshes
                         std::vector<importers::LinkVisual> vis = agent->getVisual();
@@ -74,14 +74,22 @@ namespace robot_bullet {
 
                             // Add all the meshes belonging to a body
                             for (size_t j = 0; j < vis[i].getNumMeshes(); j++) {
-                                _app->add(vis[i].meshes[j], "", Matrix4(tr[i]));
+                                _app->add(vis[i].meshes[j]);
+                                // _app->add(vis[i].meshes[j], "", Matrix4(tr[i]));
                             }
-
-                            // _multibody_map[vis[i].id] = std::vector<Object3D*>(_app->getObjects().begin() + num_obj, _app->getObjects().begin() + _app->getNumObjects());
+                            std::vector<Object3D*> int_vec = _app->getObjects();
+                            std::vector<Object3D*> sub_vec = {int_vec.begin() + num_obj, int_vec.begin() + _app->getNumObjects()};
+                            _multibody_map[vis[i].id] = sub_vec;
                         }
 
+                        // Store transformation
                         std::unordered_map<std::string, btTransform*> agent_tr = agent->getMapTransform();
                         _multibody_transform.insert(agent_tr.begin(), agent_tr.end());
+
+                        // Apply transformations
+                        for (auto& map : _multibody_map)
+                            for (auto& vec : map.second)
+                                vec->setTransformation(Matrix4(*_multibody_transform[map.first]));
                     }
                     else if (agent->getType() & AgentType::RIGIDBODY) {
                         if (agent->getType() & AgentType::BOX) {
