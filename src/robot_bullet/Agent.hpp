@@ -44,10 +44,13 @@ namespace robot_bullet {
         btScalar mass;
         // Box params
         btVector3 box;
+
         // Sphere params
         btScalar sphere;
-        // Origin
+
+        // Frame
         btTransform transform;
+
         // Material
         std::string material;
     };
@@ -60,135 +63,27 @@ namespace robot_bullet {
         // Destructor
         ~Agent();
 
-        btRigidBody* getBody();
-
         AgentParams& getParams();
 
         AgentTypes& getType();
 
-        std::vector<importers::LinkVisual> getVisual()
-        {
-            return _links_visual;
-        }
+        importers::LinkVisual& getVisual(size_t index);
 
-        btMultiBody* getMultiBody()
-        {
-            return _multiBody;
-        }
+        btMultiBody& getMultiBody();
 
-        btInverseDynamics::MultiBodyTree* getInverseModel()
-        {
-            return _inverseModel;
-        }
+        btRigidBody& getRigidBody();
 
-        std::vector<btTransform> getLinkPos()
-        {
-            std::vector<btTransform> transformations(_multiBody->getNumLinks());
-
-            transformations[0] = _multiBody->getBaseWorldTransform();
-
-            btTransform tr = transformations[0];
-            btVector3 origin = _multiBody->getBasePos();
-
-            for (size_t i = 1; i < transformations.size(); i++) {
-                transformations[i].setIdentity();
-                transformations[i].setOrigin(_multiBody->localDirToWorld(i - 1, {0, 0, 0}));
-                // transformations[i].setRotation(_multiBody->getParentToLocalRot(i - 1));
-                // transformations[i] = transformations[i] * tr;
-                // tr = transformations[i];
-            }
-
-            return transformations;
-        }
-
-        std::vector<btTransform> getLinkPos2()
-        {
-            update();
-
-            std::vector<btTransform> transformations(_multiBody->getNumLinks());
-
-            // for (size_t i = 0; i < transformations.size(); i++) {
-            //     btInverseDynamicsBullet3::mat33* world_T_body = new btInverseDynamicsBullet3::mat33();
-            //     btInverseDynamicsBullet3::vec3* world_origin = new btInverseDynamicsBullet3::vec3();
-
-            //     _inverseModel->getBodyOrigin(i, world_origin);
-            //     _inverseModel->getBodyTransform(i, world_T_body);
-
-            //     transformations[i].setOrigin(*static_cast<btVector3*>(world_origin));
-
-            //     btQuaternion q;
-            //     (*static_cast<btMatrix3x3*>(world_T_body)).getRotation(q);
-            //     transformations[i].setRotation(q);
-            // }
-
-            for (size_t i = 0; i < transformations.size(); i++) {
-                btInverseDynamicsBullet3::mat33* world_T_body = new btInverseDynamicsBullet3::mat33();
-                btInverseDynamicsBullet3::vec3* world_origin = new btInverseDynamicsBullet3::vec3();
-
-                _inverseModel->getBodyOrigin(i, world_origin);
-                _inverseModel->getBodyTransform(i, world_T_body);
-
-                btTransform tr(*static_cast<btMatrix3x3*>(world_T_body));
-                tr.setOrigin(*static_cast<btVector3*>(world_origin));
-                transformations[i] = tr;
-            }
-
-            return transformations;
-        }
-
-        btTransform* getBodyTransform(int index)
-        {
-            btInverseDynamicsBullet3::mat33* world_T_body = new btInverseDynamicsBullet3::mat33();
-            btInverseDynamicsBullet3::vec3* world_origin = new btInverseDynamicsBullet3::vec3();
-
-            _inverseModel->getBodyOrigin(index, world_origin);
-            _inverseModel->getBodyTransform(index, world_T_body);
-
-            btTransform* tr = new btTransform(*static_cast<btMatrix3x3*>(world_T_body));
-            tr->setOrigin(*static_cast<btVector3*>(world_origin));
-
-            return tr;
-        }
-
-        std::unordered_map<std::string, btTransform*> getMapTransform()
-        {
-            return _bodyTransform;
-        }
-
-        void update()
-        {
-            if (_multiBody) {
-                const int num_dofs = _multiBody->getNumDofs();
-                if (_inverseModel) {
-                    btInverseDynamics::vecx qdot(num_dofs), q(num_dofs);
-
-                    for (int dof = 0; dof < num_dofs; dof++) {
-                        q(dof) = _multiBody->getJointPos(dof);
-                        qdot(dof) = _multiBody->getJointVel(dof);
-                    }
-
-                    _inverseModel->calculatePositionAndVelocityKinematics(q, qdot);
-                }
-
-                // Update body tranformation for graphics
-                size_t index = 0;
-                for (auto itr = _bodyTransform.begin(); itr != _bodyTransform.end(); ++itr) {
-                    itr->second = getBodyTransform(index);
-                    index++;
-                }
-            }
-        }
+        void update();
 
     protected:
         // Bullet MultiBody Object
         btMultiBody* _multiBody = nullptr;
-        btInverseDynamics::MultiBodyTree* _inverseModel = nullptr;
-        std::vector<importers::LinkVisual> _links_visual;
-        // std::vector<btTransform*> _bodyTransform;
-        std::unordered_map<std::string, btTransform*> _bodyTransform;
 
         // Bullet Rigid Body Object
         btRigidBody* _rigidBody = nullptr;
+
+        // Visual information
+        std::vector<importers::LinkVisual> _links_visual;
 
         // Agent name
         std::string _name;

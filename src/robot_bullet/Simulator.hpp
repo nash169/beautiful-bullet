@@ -78,7 +78,38 @@ namespace robot_bullet {
             _time_step = 0.001;
         }
 
-        ~Simulator() {}
+        ~Simulator()
+        {
+            //cleanup in the reverse order of creation/initialization
+
+            //remove the rigidbodies from the dynamics world and delete them
+            for (int i = _dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
+                btCollisionObject* obj = _dynamicsWorld->getCollisionObjectArray()[i];
+                btRigidBody* body = btRigidBody::upcast(obj);
+                if (body && body->getMotionState()) {
+                    delete body->getMotionState();
+                }
+                _dynamicsWorld->removeCollisionObject(obj);
+                delete obj;
+            }
+
+            //delete collision shapes
+            for (int j = 0; j < _collisionShapes.size(); j++) {
+                btCollisionShape* shape = _collisionShapes[j];
+                delete shape;
+            }
+            _collisionShapes.clear();
+
+            delete _dynamicsWorld;
+
+            delete _solver;
+
+            delete _broadphase;
+
+            delete _dispatcher;
+
+            delete _collisionConfiguration;
+        }
 
         btMultiBodyDynamicsWorld* getWorld()
         {

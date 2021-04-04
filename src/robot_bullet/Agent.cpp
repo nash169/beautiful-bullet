@@ -34,18 +34,8 @@ namespace robot_bullet {
                     _multiBody->setLinearDamping(0 * 0.99);
                 }
 
-                // Add inverse dynamics model
-                btInverseDynamics::btMultiBodyTreeCreator id_creator;
-                if (-1 != id_creator.createFromBtMultiBody(_multiBody, false)) {
-                    _inverseModel = btInverseDynamics::CreateMultiBodyTree(id_creator);
-                }
-
                 // Store visual information
                 _links_visual = importer.getLinkVisual();
-
-                // Init transformations
-                for (size_t i = 0; i < _links_visual.size(); i++)
-                    _bodyTransform[_links_visual[i].id] = nullptr;
 
                 // Pass agent to simulator
                 simulator.addAgent(this);
@@ -97,9 +87,9 @@ namespace robot_bullet {
     {
     }
 
-    btRigidBody* Agent::getBody()
+    btRigidBody& Agent::getRigidBody()
     {
-        return _rigidBody;
+        return *_rigidBody;
     }
 
     AgentParams& Agent::getParams()
@@ -110,6 +100,20 @@ namespace robot_bullet {
     AgentTypes& Agent::getType()
     {
         return _type;
+    }
+
+    importers::LinkVisual& Agent::getVisual(size_t index)
+    {
+        return _links_visual[index];
+    }
+
+    btMultiBody& Agent::getMultiBody()
+    {
+        return *_multiBody;
+    }
+
+    void Agent::update()
+    {
     }
 
     btRigidBody* Agent::createRigidBody(float mass, const btTransform& startTransform, btCollisionShape* shape)

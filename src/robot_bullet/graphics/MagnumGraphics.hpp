@@ -55,61 +55,57 @@ namespace robot_bullet {
 
                     _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), 0x000ff0_rgbf, Matrix4::scaling(Vector3(dimension)));
 
-                    auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
+                    auto motionState = new BulletIntegration::MotionState{*(_app->manipulator().children().last())};
                     sim.getGround()->setMotionState(&motionState->btMotionState());
                 }
 
                 // Add agents
                 for (auto& agent : sim.getAgents()) {
                     if (agent->getType() & AgentType::MULTIBODY) {
-                        // // Body transformations
-                        // std::vector<btTransform> tr = agent->getLinkPos2();
+                        // std::cout << "hello" << std::endl;
+                        for (size_t i = 0; i < agent->getMultiBody().getNumLinks(); i++) {
+                            // Visual info
+                            importers::LinkVisual vis = agent->getVisual(i);
 
-                        // Visual meshes
-                        std::vector<importers::LinkVisual> vis = agent->getVisual();
-
-                        for (size_t i = 0; i < vis.size(); i++) {
-                            // Store number of meshes before adding new element
-                            int num_obj = _app->getNumObjects();
+                            auto* obj_last = _app->manipulator().children().last();
 
                             // Add all the meshes belonging to a body
-                            for (size_t j = 0; j < vis[i].getNumMeshes(); j++) {
-                                _app->add(vis[i].meshes[j]);
-                                // _app->add(vis[i].meshes[j], "", Matrix4(tr[i]));
+                            for (size_t j = 0; j < vis.getNumMeshes(); j++)
+                                _app->add(vis.meshes[j]);
+
+                            auto it = _mapObject2Frame.insert(std::make_pair(new Object3D(&_app->manipulator()),
+                                &agent->getMultiBody().getLinkCollider(i)->getWorldTransform()));
+
+                            if (it.second) {
+                                for (Object3D* child = obj_last->nextSibling(); child; child = child->nextSibling())
+                                    child->setParent(it.first->first);
                             }
-                            std::vector<Object3D*> int_vec = _app->getObjects();
-                            std::vector<Object3D*> sub_vec = {int_vec.begin() + num_obj, int_vec.begin() + _app->getNumObjects()};
-                            _multibody_map[vis[i].id] = sub_vec;
                         }
 
-                        // Store transformation
-                        std::unordered_map<std::string, btTransform*> agent_tr = agent->getMapTransform();
-                        _multibody_transform.insert(agent_tr.begin(), agent_tr.end());
-
-                        // Apply transformations
-                        for (auto& map : _multibody_map)
-                            for (auto& vec : map.second)
-                                vec->setTransformation(Matrix4(*_multibody_transform[map.first]));
+                        // // Apply transformations
+                        // for (auto& map : _mapObject2Frame)
+                        //     map.first->setTransformation(Matrix4(*map.second));
                     }
                     else if (agent->getType() & AgentType::RIGIDBODY) {
                         if (agent->getType() & AgentType::BOX) {
-                            btVector3 dimension = static_cast<btBoxShape*>(agent->getBody()->getCollisionShape())->getHalfExtentsWithMargin(),
-                                      origin = agent->getBody()->getCenterOfMassPosition();
+                            btVector3 dimension = static_cast<btBoxShape*>(agent->getRigidBody().getCollisionShape())->getHalfExtentsWithMargin(),
+                                      origin = agent->getRigidBody().getCenterOfMassPosition();
 
-                            btQuaternion orientation = agent->getBody()->getOrientation();
+                            btQuaternion orientation = agent->getRigidBody().getOrientation();
 
                             _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), getColor(agent->getParams().material), Matrix4::scaling(Vector3(dimension)));
                         }
                         else if (agent->getType() & AgentType::SPHERE) {
                         }
 
-                        auto motionState = new BulletIntegration::MotionState{*(_app->getObjects().back())};
-                        agent->getBody()->setMotionState(&motionState->btMotionState());
+                        auto motionState = new BulletIntegration::MotionState{*(_app->manipulator().children().last())};
+                        agent->getRigidBody().setMotionState(&motionState->btMotionState());
                     }
                 }
             }
 
-            bool done() override
+            bool
+            done() override
             {
                 return _done;
             }
@@ -121,6 +117,10 @@ namespace robot_bullet {
 
             bool refresh() override
             {
+                // Apply transformations
+                for (auto& map : _mapObject2Frame)
+                    map.first->setTransformation(Matrix4(*map.second));
+
                 return _app->mainLoopIteration();
             }
 
@@ -129,8 +129,7 @@ namespace robot_bullet {
 
             MagnumApp* _app;
 
-            std::unordered_map<std::string, std::vector<Object3D*>> _multibody_map;
-            std::unordered_map<std::string, btTransform*> _multibody_transform;
+            std::unordered_map<Object3D*, btTransform*> _mapObject2Frame;
         };
     } // namespace graphics
 } // namespace robot_bullet
