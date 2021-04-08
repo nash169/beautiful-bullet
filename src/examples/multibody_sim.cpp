@@ -23,8 +23,8 @@ int main(int argc, char** argv)
 
     Agent iiwa(sim, "models/iiwa/model.urdf");
 
-    // AgentParams cube_params(1.0, "green", {0., 0., 5.}, {0.5, 0.5, 0.5});
-    // AgentParams cube_params2(1.0, "blue", {0., 0, 15.}, {1., 1., 1.});
+    // AgentParams cube_params(1.0, "Green", {0., 0., 5.}, {0.5, 0.5, 0.5});
+    // AgentParams cube_params2(1.0, "Blue", {0., 0, 15.}, {1., 1., 1.});
 
     // Agent cube(sim, "box", cube_params);
     // Agent cube2(sim, "box", cube_params2);
