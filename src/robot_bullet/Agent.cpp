@@ -35,7 +35,11 @@ namespace robot_bullet {
                 }
 
                 // Store visual information
-                _links_visual = importer.getLinkVisual();
+                for (size_t i = 0; i < _multiBody->getNumLinks(); i++) {
+                    _linkVisual.push_back(importer.getLinkVisual(i));
+                    _linkCollision.push_back(importer.getLinkCollision(i));
+                    _link.push_back(importer.getLink(i));
+                }
 
                 // Pass agent to simulator
                 simulator.addAgent(this);
@@ -102,9 +106,19 @@ namespace robot_bullet {
         return _type;
     }
 
-    importers::LinkVisual& Agent::getVisual(size_t index)
+    btArray<importers::UrdfVisual>& Agent::getLinkVisual(size_t index)
     {
-        return _links_visual[index];
+        return _linkVisual[index];
+    }
+
+    btArray<importers::UrdfCollision>& Agent::getLinkCollision(size_t index)
+    {
+        return _linkCollision[index];
+    }
+
+    importers::UrdfLink& Agent::getLink(size_t index)
+    {
+        return _link[index];
     }
 
     btMultiBody& Agent::getMultiBody()

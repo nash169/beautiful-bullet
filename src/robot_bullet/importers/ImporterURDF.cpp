@@ -5,25 +5,28 @@ namespace robot_bullet {
     namespace importers {
         static btScalar gUrdfDefaultCollisionMargin = 0.001;
 
-        std::vector<LinkVisual> ImporterURDF::getLinkVisual()
+        btArray<UrdfVisual> ImporterURDF::getLinkVisual(int index)
         {
-            size_t num_links = m_data->m_urdfParser.getModel().m_links.size();
+            // Get link pointer
+            UrdfLink* linkPtr = *m_data->m_urdfParser.getModel().m_links.getAtIndex(index);
 
-            std::vector<LinkVisual> link(num_links);
+            return linkPtr->m_visualArray;
+        }
 
-            for (size_t i = 0; i < num_links; i++) {
-                // Get link name
-                link[i].id = m_data->m_urdfParser.getModel().m_links.getKeyAtIndex(i).m_string1;
+        btArray<UrdfCollision> ImporterURDF::getLinkCollision(int index)
+        {
+            // Get link pointer
+            UrdfLink* linkPtr = *m_data->m_urdfParser.getModel().m_links.getAtIndex(index);
 
-                // Get link pointer
-                UrdfLink* linkPtr = *m_data->m_urdfParser.getModel().m_links.getAtIndex(i);
+            return linkPtr->m_collisionArray;
+        }
 
-                // Store path of all the visual messhes
-                for (size_t j = 0; j < linkPtr->m_visualArray.size(); j++)
-                    link[i].meshes.push_back(linkPtr->m_visualArray[j].m_geometry.m_meshFileName);
-            }
+        UrdfLink ImporterURDF::getLink(int index)
+        {
+            // Get link pointer
+            UrdfLink* linkPtr = *m_data->m_urdfParser.getModel().m_links.getAtIndex(index);
 
-            return link;
+            return *linkPtr;
         }
 
         bool ImporterURDF::loadURDF(const char* fileName, bool forceFixedBase)

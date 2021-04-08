@@ -67,7 +67,9 @@ namespace robot_bullet {
 
         AgentTypes& getType();
 
-        importers::LinkVisual& getVisual(size_t index);
+        btArray<importers::UrdfVisual>& getLinkVisual(size_t index);
+        btArray<importers::UrdfCollision>& getLinkCollision(size_t index);
+        importers::UrdfLink& getLink(size_t index);
 
         btMultiBody& getMultiBody();
 
@@ -82,8 +84,10 @@ namespace robot_bullet {
         // Bullet Rigid Body Object
         btRigidBody* _rigidBody = nullptr;
 
-        // Visual information
-        std::vector<importers::LinkVisual> _links_visual;
+        // Store visual information for graphics
+        std::vector<btArray<importers::UrdfVisual>> _linkVisual;
+        std::vector<btArray<importers::UrdfCollision>> _linkCollision;
+        std::vector<importers::UrdfLink> _link;
 
         // Agent name
         std::string _name;
