@@ -59,127 +59,42 @@ namespace robot_bullet {
 
                     btQuaternion orientation = sim.getGround()->getOrientation();
 
-                    _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), 0x585858_rgbf, Matrix4::scaling(Vector3(dimension)));
+                    auto motionState = new BulletIntegration::MotionState{
+                        _app->addPrimitive("cube")
+                            .setPrimitiveTransformation(Matrix4::scaling(Vector3(dimension)))
+                            .setTransformation(Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)))
+                            .setColor(0x585858_rgbf)};
 
-                    auto motionState = new BulletIntegration::MotionState{*(_app->manipulator().children().last())};
                     sim.getGround()->setMotionState(&motionState->btMotionState());
                 }
 
                 // Add agents
                 for (auto& agent : sim.getAgents()) {
                     if (agent->getType() & AgentType::MULTIBODY) {
-                        btAlignedObjectArray<btQuaternion> world_to_local;
-                        btAlignedObjectArray<btVector3> local_origin;
 
-                        agent->getMultiBody().forwardKinematics(world_to_local, local_origin);
+                        // btAlignedObjectArray<btQuaternion> world_to_local;
+                        // btAlignedObjectArray<btVector3> local_origin;
+                        // agent->getMultiBody().forwardKinematics(world_to_local, local_origin);
 
-                        for (size_t i = 0; i < 2; i++) { // agent->getMultiBody().getNumLinks()
-                            // Last object in the manipulator
-                            auto* obj_last = _app->manipulator().children().last();
-
+                        for (size_t i = 0; i < agent->getMultiBody().getNumLinks(); i++) {
                             // Get array of visual information for link i
                             auto vis = agent->getLinkVisual(i);
                             auto col = agent->getLinkCollision(i);
                             auto link = agent->getLink(i);
 
+                            // Insert map control object -> transformation
+                            auto it = _mapObject2Frame.insert(std::make_pair(new Object3D(&_app->manipulator()),
+                                &agent->getMultiBody().getLinkCollider(i)->getWorldTransform()));
+
                             // Add all the meshes belonging to a body
-                            for (size_t j = 0; j < vis.size(); j++) {
-                                _app->add(vis[j].m_geometry.m_meshFileName, "", Matrix4(), getColor(vis[j].m_materialName), Matrix4::scaling(Vector3(vis[j].m_geometry.m_meshScale)));
-                                // _app->addFrame(Matrix4(col[j].m_linkLocalFrame));
-                            }
-
-                            auto it = _mapObject2Frame.insert(std::make_pair(new Object3D(&_app->manipulator()), _identity));
-
                             if (it.second) {
-                                for (Object3D* child = obj_last->nextSibling(); child; child = child->nextSibling())
-                                    child->setParent(it.first->first);
+                                for (size_t j = 0; j < vis.size(); j++)
+                                    _app->import(vis[j].m_geometry.m_meshFileName)
+                                        .setPrimitiveTransformation(Matrix4::scaling(Vector3(vis[j].m_geometry.m_meshScale)))
+                                        .setColor(getColor(vis[j].m_materialName))
+                                        .setParent(it.first->first);
                             }
-
-                            // btVector3 temp = agent->getMultiBody().getRVector(0);
-
-                            btTransform tr = link.m_linkTransformInWorld; // agent->getMultiBody().getLink(i).m_cachedWorldTransform; // agent->getMultiBody().getLink(i).m_cachedWorldTransform
-                            // tr.setIdentity();
-                            // tr.setOrigin(temp);
-                            // if (i)
-                            _app->addFrame(Matrix4(tr));
-                            // if (i == 0)
-                            // it.first->first->setTransformation(Matrix4(tr));
-                            // else
-                            //     it.first->first->setTransformation(Matrix4::translation(Vector3{0.f, 0.f, 0.5f}) * Matrix4(tr)); // Matrix4::rotationY(1.414_radf) *
                         }
-
-                        // Base link
-
-                        // importers::LinkVisual vis = agent->getVisual(0);
-
-                        // auto* obj_last = _app->manipulator().children().last();
-
-                        // // Add all the meshes belonging to a body
-                        // for (size_t j = 0; j < vis.getNumMeshes(); j++)
-                        //     _app->add(vis.meshes[j]);
-
-                        // auto it = _mapObject2Frame.insert(std::make_pair(new Object3D(&_app->manipulator()), _identity));
-
-                        // if (it.second) {
-                        //     for (Object3D* child = obj_last->nextSibling(); child; child = child->nextSibling())
-                        //         child->setParent(it.first->first);
-                        // }
-
-                        // vis = agent->getVisual(1);
-
-                        // obj_last = _app->manipulator().children().last();
-
-                        // // Add all the meshes belonging to a body
-                        // for (size_t j = 0; j < vis.getNumMeshes(); j++)
-                        //     _app->add(vis.meshes[j]);
-
-                        // it = _mapObject2Frame.insert(std::make_pair(new Object3D(&_app->manipulator()), _identity));
-
-                        // if (it.second) {
-                        //     for (Object3D* child = obj_last->nextSibling(); child; child = child->nextSibling())
-                        //         child->setParent(it.first->first);
-                        // }
-
-                        // btVector3 temp = agent->getMultiBody().localPosToWorld(0, agent->getMultiBody().getRVector(1));
-
-                        // btTransform tr;
-                        // tr.setIdentity();
-                        // tr.setOrigin(temp);
-
-                        // // it.first->first->setTransformation(Matrix4(tr));
-
-                        // std::cout << agent->getMultiBody().getBasePos().x() << " "
-                        //           << agent->getMultiBody().getBasePos().y() << " "
-                        //           << agent->getMultiBody().getBasePos().z() << std::endl;
-
-                        // std::cout << agent->getMultiBody().getLink(0).m_cachedWorldTransform.getOrigin().x() << " "
-                        //           << agent->getMultiBody().getLink(0).m_cachedWorldTransform.getOrigin().y() << " "
-                        //           << agent->getMultiBody().getLink(0).m_cachedWorldTransform.getOrigin().z() << std::endl;
-
-                        // Other links
-                        // for (size_t i = 1; i < 3; i++) {
-                        //     importers::LinkVisual vis = agent->getVisual(i);
-
-                        //     auto* obj_last = _app->manipulator().children().last();
-
-                        //     // Add all the meshes belonging to a body
-                        //     for (size_t j = 0; j < vis.getNumMeshes(); j++)
-                        //         _app->add(vis.meshes[j]);
-
-                        //     *_temp = agent->getMultiBody().getLinkCollider(i - 1)->getWorldTransform();
-
-                        //     auto it = _mapObject2Frame.insert(std::make_pair(new Object3D(&_app->manipulator()),
-                        //         _temp));
-
-                        //     if (it.second) {
-                        //         for (Object3D* child = obj_last->nextSibling(); child; child = child->nextSibling())
-                        //             child->setParent(it.first->first);
-                        //     }
-                        // }
-
-                        // // _app->addFrame(Matrix4(agent->getMultiBody().getLinkCollider(0)->getWorldTransform()));
-
-                        // _app->addFrame(Matrix4());
 
                         // // Apply transformations
                         // for (auto& map : _mapObject2Frame)
@@ -192,13 +107,16 @@ namespace robot_bullet {
 
                             btQuaternion orientation = agent->getRigidBody().getOrientation();
 
-                            _app->add("cube", "", Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)), getColor(agent->getParams().material), Matrix4::scaling(Vector3(dimension)));
+                            auto motionState = new BulletIntegration::MotionState{
+                                _app->addPrimitive("cube")
+                                    .setPrimitiveTransformation(Matrix4::scaling(Vector3(dimension)))
+                                    .setTransformation(Matrix4(Quaternion(orientation).toMatrix()) * Matrix4::translation(Vector3(origin)))
+                                    .setColor(getColor(agent->getParams().material))};
+
+                            agent->getRigidBody().setMotionState(&motionState->btMotionState());
                         }
                         else if (agent->getType() & AgentType::SPHERE) {
                         }
-
-                        auto motionState = new BulletIntegration::MotionState{*(_app->manipulator().children().last())};
-                        agent->getRigidBody().setMotionState(&motionState->btMotionState());
                     }
                 }
             }
@@ -216,9 +134,9 @@ namespace robot_bullet {
 
             bool refresh() override
             {
-                // // Apply transformations
-                // for (auto& map : _mapObject2Frame)
-                //     map.first->setTransformation(Matrix4(*map.second));
+                // Apply transformations
+                for (auto& map : _mapObject2Frame)
+                    map.first->setTransformation(Matrix4(*map.second));
 
                 return _app->mainLoopIteration();
             }
