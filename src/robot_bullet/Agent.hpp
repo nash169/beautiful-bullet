@@ -9,9 +9,7 @@
 
 #include <LinearMath/btVector3.h>
 
-#include "BulletInverseDynamics/IDConfig.hpp"
 #include <BulletCollision/btBulletCollisionCommon.h>
-#include <InverseDynamics/btMultiBodyTreeCreator.hpp>
 
 #include <robot_bullet/importers/ImporterURDF.hpp>
 #include <robot_bullet/utils/MultiBodyCreator.hpp>
