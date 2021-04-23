@@ -93,6 +93,7 @@ namespace robot_bullet {
                                         .setPrimitiveTransformation(Matrix4::scaling(Vector3(vis[j].m_geometry.m_meshScale)))
                                         .setColor(getColor(vis[j].m_materialName))
                                         .setParent(it.first->first);
+                                // This part has to be fixed in the magnum_dynamics. It works because there is just one mesh with the iiwa
                             }
                         }
 
