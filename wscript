@@ -17,7 +17,8 @@ def options(opt):
     opt.load("compiler_cxx")
 
     # Load tools options
-    opt.load("flags bullet corrade magnum magnum_dynamics", tooldir="waf_tools")
+    opt.load("magnum_dynamics", tooldir="/usr/local/share/waf")
+    opt.load("flags bullet corrade", tooldir="waf_tools")
 
     # Add options
     opt.add_option("--shared",
@@ -39,17 +40,12 @@ def configure(cfg):
     # Define require libraries
     cfg.get_env()["requires"] += ["BULLET", "CORRADE"]
 
-    # (Optional Graphics) Magnum components and integration loading
-    cfg.options.magnum_components = (
-        "Sdl2Application,Primitives,Shaders,MeshTools,SceneGraph,Trade,GL"
-    )
-    cfg.options.magnum_integrations = "Bullet"
-
     # Bullet components
     cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common,BulletInverseDynamicsUtils"
 
     # Load tools configuration
-    cfg.load("flags bullet corrade magnum magnum_dynamics", tooldir="waf_tools")
+    cfg.load("magnum_dynamics", tooldir="/usr/local/share/waf")
+    cfg.load("flags bullet corrade", tooldir="waf_tools")
 
     # Remove duplicates
     cfg.get_env()["libs"] = list(set(cfg.get_env()["libs"]))
@@ -122,6 +118,10 @@ def build(bld):
             "${PREFIX}/lib",
             blddir + "/lib" + bld.get_env()["libname"] + "." + bld.env.SUFFIX,
         )
+
+    # Install tools
+    bld.install_files("${PREFIX}/share/waf", "scripts/robot_bullet.py")
+    bld.install_files("${PREFIX}/share/waf", "waf_tools/utils.py")
 
 # for root, dirs, files in os.walk(directory):
 #     for filename in files:
