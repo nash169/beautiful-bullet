@@ -17,10 +17,12 @@ def build(bld):
     sources = [f[len(bld.path.abspath()) + 1:] for f in sources]
 
     # External required libraries for the examples
-    example_required = {}  # { "multibody_sim.cpp": ["MAGNUMDYNAMICS"] }
+    example_required = {"multibody_sim.cpp": ["UTILSCPP"],
+                        "loader_test.cpp": ["UTILSCPP"]}
 
     # External optional libraries for the examples
-    example_optional = {"multibody_sim.cpp": ["MAGNUMDYNAMICS"]}
+    example_optional = {"multibody_sim.cpp": ["MAGNUMDYNAMICS"],
+                        "loader_test.cpp": ["MAGNUMDYNAMICS"]}
 
     # Compile all the examples
     for example in sources:
