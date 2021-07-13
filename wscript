@@ -11,14 +11,22 @@ APPNAME = "robot-bullet"
 srcdir = "."
 blddir = "build"
 
+# Tools' name and directory
+tools = {"magnum_dynamics": "/home/bernardo/devs/magnum-dynamics/install",
+         "utils_cpp": "/home/bernardo/devs/utils-cpp/install"}
+
 
 def options(opt):
     # Load modules necessary in the configuration function
     opt.load("compiler_cxx")
 
+    # Load personal tools options
+    for key in tools:
+        opt.load(key, tooldir=os.path.join(
+            tools[key], "share/waf"))
+
     # Load tools options
-    opt.load("magnum_dynamics", tooldir="/usr/local/share/waf")
-    opt.load("flags bullet corrade", tooldir="waf_tools")
+    opt.load("flags bullet corrade urdfdom assimp", tooldir="waf_tools")
 
     # Add options
     opt.add_option("--shared",
@@ -40,12 +48,16 @@ def configure(cfg):
     # Define require libraries
     cfg.get_env()["requires"] += ["BULLET", "CORRADE"]
 
+    # Load personal tools configurations
+    for key in tools:
+        cfg.load(key, tooldir=os.path.join(
+            tools[key], "share/waf"))
+
     # Bullet components
     cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common,BulletInverseDynamicsUtils"
 
     # Load tools configuration
-    cfg.load("magnum_dynamics", tooldir="/usr/local/share/waf")
-    cfg.load("flags bullet corrade", tooldir="waf_tools")
+    cfg.load("flags bullet corrade urdfdom assimp", tooldir="waf_tools")
 
     # Remove duplicates
     cfg.get_env()["libs"] = list(set(cfg.get_env()["libs"]))
