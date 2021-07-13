@@ -185,6 +185,8 @@ namespace robot_bullet {
             int mbParentIndex = cache.getMbIndexFromUrdfIndex(urdfParentIndex);
             btRigidBody* parentRigidBody = 0;
 
+            // std::cout << "Link: " << urdfLinkIndex << " " << mbLinkIndex << " " << urdfParentIndex << std::endl;
+
             //b3Printf("mb link index = %d\n",mbLinkIndex);
 
             btTransform parentLocalInertialFrame;
@@ -207,6 +209,18 @@ namespace robot_bullet {
             localInertialFrame.setIdentity();
             btVector3 localInertiaDiagonal(0, 0, 0);
             u2b.getMassAndInertia(urdfLinkIndex, mass, localInertiaDiagonal, localInertialFrame, flags);
+
+            // std::cout << localInertialFrame.getOrigin().x() << " "
+            //           << localInertialFrame.getOrigin().y() << " "
+            //           << localInertialFrame.getOrigin().z() << std::endl;
+
+            // std::cout << parentLocalInertialFrame.getOrigin().x() << " "
+            //           << parentLocalInertialFrame.getOrigin().y() << " "
+            //           << parentLocalInertialFrame.getOrigin().z() << std::endl;
+
+            // std::cout << localInertiaDiagonal.x() << " "
+            //           << localInertiaDiagonal.y() << " "
+            //           << localInertiaDiagonal.z() << std::endl;
 
             btTransform parent2joint;
             parent2joint.setIdentity();
@@ -234,6 +248,14 @@ namespace robot_bullet {
                     linkTransformInWorldSpace = parentTransformInWorldSpace * parent2joint;
                 }
             }
+
+            // std::cout << jointAxisInJointSpace.x() << " "
+            //           << jointAxisInJointSpace.y() << " "
+            //           << jointAxisInJointSpace.z() << std::endl;
+
+            // std::cout << parent2joint.getOrigin().x() << " "
+            //           << parent2joint.getOrigin().y() << " "
+            //           << parent2joint.getOrigin().z() << std::endl;
 
             btCompoundShape* tmpShape = u2b.convertLinkCollisionShapes(urdfLinkIndex, pathPrefix, localInertialFrame);
             btCollisionShape* compoundShape = tmpShape;
