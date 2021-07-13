@@ -90,16 +90,17 @@ namespace robot_bullet {
                             if (it.second) {
                                 for (size_t j = 0; j < vis.size(); j++)
                                     _app->import(vis[j].m_geometry.m_meshFileName)
-                                        .setPrimitiveTransformation(Matrix4::scaling(Vector3(vis[j].m_geometry.m_meshScale)))
+                                        .setTransformation(Matrix4::scaling(Vector3(vis[j].m_geometry.m_meshScale)))
+                                        // .setPrimitiveTransformation(Matrix4::scaling(Vector3(vis[j].m_geometry.m_meshScale)))
                                         .setColor(getColor(vis[j].m_materialName))
                                         .setParent(it.first->first);
                                 // This part has to be fixed in the magnum_dynamics. It works because there is just one mesh with the iiwa
                             }
                         }
 
-                        // // Apply transformations
-                        // for (auto& map : _mapObject2Frame)
-                        //     map.first->setTransformation(Matrix4(*map.second));
+                        // Apply transformations
+                        for (auto& map : _mapObject2Frame)
+                            map.first->setTransformation(Matrix4(*map.second));
                     }
                     else if (agent->getType() & AgentType::RIGIDBODY) {
                         if (agent->getType() & AgentType::BOX) {
@@ -136,8 +137,8 @@ namespace robot_bullet {
             bool refresh() override
             {
                 // Apply transformations
-                for (auto& map : _mapObject2Frame)
-                    map.first->setTransformation(Matrix4(*map.second));
+                // for (auto& map : _mapObject2Frame)
+                //     map.first->setTransformation(Matrix4(*map.second));
 
                 return _app->mainLoopIteration();
             }
