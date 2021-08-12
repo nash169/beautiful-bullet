@@ -190,6 +190,8 @@ namespace robot_bullet {
             }
         }
 
+        btMultiBodyDynamicsWorld* world() { return _dynamicsWorld; }
+
     protected:
         /* Collision Configuration */
         btDefaultCollisionConfiguration* _collisionConfiguration;

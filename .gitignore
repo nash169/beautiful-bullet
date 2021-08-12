@@ -405,6 +405,4 @@ TSWLatexianTemp*
 
 .lock-waf_darwin_build
 
-# mfem output
-mode_*
-refined_mesh*
+waf_configure

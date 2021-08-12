@@ -18,16 +18,7 @@ int main(int argc, char** argv)
 
     utils::urdf_parsing::BulletLoader loader;
 
-    // auto urdf_parsed = loader.parseMultiBody("models/iiwa/model.urdf");
-
-    int a = 5;
-    int *b, *c;
-    b = &a;
-    c = &a;
-
-    // delete c;
-
-    std::cout << *b << std::endl;
+    auto urdf_parsed = loader.parseMultiBody("models/iiwa/model.urdf", sim.world());
 
     // auto scene = utils::urdf_parsing::MeshShape::loadMesh("models/sphere.stl");
 
