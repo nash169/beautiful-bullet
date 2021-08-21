@@ -4,7 +4,7 @@
         <visual>
             <origin xyz="${xyz}" rpy="${rpy}"/>
             <geometry>
-                <mesh filename="package://franka_description/robots/meshes/visual/${mesh}.dae"/>
+                <mesh filename="meshes/visual/${mesh}.dae"/>
             </geometry>
         </visual>
     </xacro:macro>

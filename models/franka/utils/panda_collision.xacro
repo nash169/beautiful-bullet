@@ -4,7 +4,7 @@
         <collision>
             <origin xyz="${xyz}" rpy="${rpy}"/>
             <geometry>
-                <mesh filename="package://franka_description/robots/meshes/collision/${mesh}.stl"/>
+                <mesh filename="meshes/collision/${mesh}.stl"/>
             </geometry>
         </collision>
     </xacro:macro>
