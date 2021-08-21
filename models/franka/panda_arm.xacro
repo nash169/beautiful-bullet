@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda">
     <!-- Includes -->
-    <xacro:include filename="$(find franka_description)/robots/utils/panda_link.xacro" />
-    <xacro:include filename="$(find franka_description)/robots/utils/panda_joint.xacro" />
-    <xacro:include filename="$(find franka_description)/robots/utils/panda_transmission.xacro" />
-    <xacro:include filename="$(find franka_description)/robots/utils/panda_gazebo.xacro" />
+    <xacro:include filename="utils/panda_link.xacro" />
+    <xacro:include filename="utils/panda_joint.xacro" />
+    <xacro:include filename="utils/panda_transmission.xacro" />
+    <xacro:include filename="utils/panda_gazebo.xacro" />
 
     <!-- ns: Namespace of the panda. Serves to differentiate between arms in case of multiple instances. -->
     <xacro:macro name="panda_arm" params="ns:='panda' connected_to:='' xyz:='0 0 0' rpy:='0 0 0' visual:='true' collision:='true' inertial:='true' hardware_interface:=EffortJointInterface">

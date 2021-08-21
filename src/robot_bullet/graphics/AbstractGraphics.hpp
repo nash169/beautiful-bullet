@@ -10,28 +10,29 @@ namespace robot_bullet {
     namespace graphics {
         class AbstractGraphics {
         public:
-            AbstractGraphics(double desiredFPS = 25) : _desired_fps(desiredFPS), _frame_counter(0), _init(false), _done(true), _pause(false) {}
+            AbstractGraphics()
+                : _desiredFPS(40), _frameCounter(0), _init(false), _done(true), _pause(false) {}
 
-            virtual ~AbstractGraphics() {}
+            bool done() { return _done; }
 
-            virtual void init(Simulator& sim)
+            bool pause() { return _pause; }
+
+            size_t desiredFPS() { return _desiredFPS; }
+
+            AbstractGraphics& setDesiredFPS(size_t desiredFPS)
             {
+                _desiredFPS = desiredFPS;
+                return *this;
             }
 
-            virtual bool done() { return _done; }
-
-            virtual bool pause() { return _pause; }
+            virtual bool init(Simulator& simulator) { return true; }
 
             virtual bool refresh() { return true; }
-
-            virtual void setDesiredFPS(size_t desiredFPS) { _desired_fps = desiredFPS; }
-
-            virtual void setEnable(bool) {}
 
         protected:
             bool _init, _done, _pause;
 
-            size_t _frame_counter, _render_period, _desired_fps;
+            size_t _frameCounter, _renderPeriod, _desiredFPS;
         };
     } // namespace graphics
 } // namespace robot_bullet

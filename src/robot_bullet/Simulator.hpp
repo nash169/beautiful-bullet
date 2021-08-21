@@ -12,6 +12,7 @@
 #include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
 
 #include "robot_bullet/Agent.hpp"
+#include "robot_bullet/Object.hpp"
 #include "robot_bullet/graphics/AbstractGraphics.hpp"
 
 namespace robot_bullet {
@@ -51,7 +52,7 @@ namespace robot_bullet {
 
     class Simulator {
     public:
-        Simulator()
+        Simulator() : _timeStep(0.001)
         {
             // collision configuration contains default setup for memory, collision setup
             _collisionConfiguration = new btDefaultCollisionConfiguration(); // _collisionConfiguration->setConvexConvexMultipointIterations();
@@ -69,13 +70,10 @@ namespace robot_bullet {
             _solver = new btMultiBodyConstraintSolver;
 
             // create dynamics world
-            _dynamicsWorld = new btMultiBodyDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
+            _world = new btMultiBodyDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
 
             // set world gravity
-            _dynamicsWorld->setGravity(btVector3(0, 0, -9.81));
-
-            // time-step
-            _time_step = 0.001;
+            _world->setGravity(btVector3(0, 0, -9.81));
         }
 
         ~Simulator()
@@ -83,13 +81,13 @@ namespace robot_bullet {
             //cleanup in the reverse order of creation/initialization
 
             //remove the rigidbodies from the dynamics world and delete them
-            for (int i = _dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
-                btCollisionObject* obj = _dynamicsWorld->getCollisionObjectArray()[i];
+            for (int i = _world->getNumCollisionObjects() - 1; i >= 0; i--) {
+                btCollisionObject* obj = _world->getCollisionObjectArray()[i];
                 btRigidBody* body = btRigidBody::upcast(obj);
                 if (body && body->getMotionState()) {
                     delete body->getMotionState();
                 }
-                _dynamicsWorld->removeCollisionObject(obj);
+                _world->removeCollisionObject(obj);
                 delete obj;
             }
 
@@ -100,7 +98,7 @@ namespace robot_bullet {
             }
             _collisionShapes.clear();
 
-            delete _dynamicsWorld;
+            delete _world;
 
             delete _solver;
 
@@ -111,86 +109,109 @@ namespace robot_bullet {
             delete _collisionConfiguration;
         }
 
-        btMultiBodyDynamicsWorld* getWorld()
+        Simulator& addGround()
         {
-            return _dynamicsWorld;
+            // Ground parameters
+            BoxParams params;
+            params
+                .setSize(4, 4, 0.5)
+                .setMass(0)
+                .setFriction(0.5)
+                .setPose(Eigen::Vector3d(0, 0, -0.5));
+
+            return addObjects(Object("box", params));
         }
 
-        btAlignedObjectArray<btCollisionShape*>& getCollisionShapes()
+        template <typename... Args>
+        Simulator& addAgents(Agent&& agent, Args... args) // move the agent
         {
-            return _collisionShapes;
-        }
-
-        void addGround()
-        {
-            ///create a ground 4.0f, 0.5f, 4.0f - btVector3(btScalar(150.), btScalar(25.), btScalar(150.))
-            btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(4.), btScalar(4.), btScalar(0.5)));
-
-            _collisionShapes.push_back(groundShape);
-
-            btTransform groundTransform;
-            groundTransform.setIdentity();
-            groundTransform.setOrigin(btVector3(0, 0, -0.5));
-            // groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0.));
-            //We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
-            btScalar mass(0.);
-
-            //rigidbody is dynamic if and only if mass is non zero, otherwise static
-            bool isDynamic = (mass != 0.f);
-
-            btVector3 localInertia(0, 0, 0);
-            if (isDynamic)
-                groundShape->calculateLocalInertia(mass, localInertia);
-
-            //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-            btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
-            btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
-            _ground = new btRigidBody(rbInfo);
-            _ground->setFriction(0.5);
-
-            //add the ground to the dynamics world
-            _dynamicsWorld->addRigidBody(_ground, 1, 1 + 2);
-        }
-
-        void addAgent(Agent* agent)
-        {
+            // Move agent inside simulator
             _agents.push_back(agent);
+
+            for (int i = -1; i < _agents.back().body()->getNumLinks(); i++) {
+                // std::cout << "Hello: " << i << std::endl;
+                if (i >= 0) {
+                    // Add joint constraints to the world
+                    if (_agents.back().body()->getLink(i).m_jointType == btMultibodyLink::eRevolute || _agents.back().body()->getLink(i).m_jointType == btMultibodyLink::ePrismatic)
+                        if (_agents.back().body()->getLink(i).m_jointLowerLimit <= _agents.back().body()->getLink(i).m_jointUpperLimit) {
+                            btMultiBodyConstraint* constraint = new btMultiBodyJointLimitConstraint(_agents.back().body(), i, _agents.back().body()->getLink(i).m_jointLowerLimit, _agents.back().body()->getLink(i).m_jointUpperLimit);
+                            _world->addMultiBodyConstraint(constraint);
+                        }
+
+                    // Add collision object to the world
+                    bool isDynamic = (i == -1 && _agents.back().body()->hasFixedBase()) ? false : true;
+                    int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
+                        collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
+
+                    _world->addCollisionObject(_agents.back().body()->getLinkCollider(i), collisionFilterGroup, collisionFilterMask);
+                }
+                else {
+                    // Add collision object to the world
+                    bool isDynamic = (i == -1 && _agents.back().body()->hasFixedBase()) ? false : true;
+                    int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
+                        collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
+
+                    _world->addCollisionObject(_agents.back().body()->getBaseCollider(), collisionFilterGroup, collisionFilterMask);
+                }
+            }
+
+            _world->addMultiBody(_agents.back().body());
+
+            if constexpr (sizeof...(args) > 0)
+                addAgents(args...);
+
+            return *this;
         }
 
-        std::vector<Agent*> getAgents()
+        template <typename... Args>
+        Simulator& addObjects(Object&& object, Args... args) // move the agent
         {
-            return _agents;
+            // Move object
+            _objects.push_back(object);
+
+            // Add rigid body
+            _world->addRigidBody(_objects.back().body());
+
+            // Add collision shape
+            _collisionShapes.push_back(_objects.back().body()->getCollisionShape());
+
+            if constexpr (sizeof...(args) > 0)
+                addObjects(args...);
+
+            return *this;
         }
 
-        btRigidBody* getGround()
-        {
-            return _ground;
-        }
+        std::vector<Agent>& agents() { return _agents; }
+
+        std::vector<Object>& objects() { return _objects; }
 
         void setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
         {
             _graphics = std::move(graphics);
         }
 
-        void run(double run_time = -1)
+        void run(double runTime = -1)
         {
             // Reset clock
             _clock = 0;
 
+            // Init graphics
             _graphics->init(*this);
 
-            uint8_t step = 0;
-            uint8_t g_step = std::ceil(40. / _time_step); // 40Hz graphics
-            while (true) {
-                _dynamicsWorld->stepSimulation(_time_step);
-                if (step % g_step == 0)
+            while (runTime < 0 || _clock * _timeStep <= runTime) {
+                // Simulation step
+                _world->stepSimulation(_timeStep);
+
+                // Refresh graphics
+                if (_clock % _graphics->desiredFPS() == 0) {
                     if (!_graphics->refresh())
                         break;
-                step++;
+                }
+
+                // Increment clock
+                _clock++;
             }
         }
-
-        btMultiBodyDynamicsWorld* world() { return _dynamicsWorld; }
 
     protected:
         /* Collision Configuration */
@@ -208,7 +229,7 @@ namespace robot_bullet {
         btMultiBodyConstraintSolver* _solver; // btSequentialImpulseConstraintSolver
 
         /* Multibody Dynamic World */
-        btMultiBodyDynamicsWorld* _dynamicsWorld; // btDiscreteDynamicsWorld
+        btMultiBodyDynamicsWorld* _world; // btDiscreteDynamicsWorld
 
         /* Collision Shapes */
         btAlignedObjectArray<btCollisionShape*> _collisionShapes;
@@ -217,13 +238,14 @@ namespace robot_bullet {
         std::unique_ptr<graphics::AbstractGraphics> _graphics;
 
         /* Simulation params */
-        double _time_step, _clock, _run_time;
+        size_t _clock;
+        double _timeStep;
 
-        /* Ground */
-        btRigidBody* _ground = nullptr;
+        /* Objects */
+        std::vector<Object> _objects;
 
         /* Agents */
-        std::vector<Agent*> _agents;
+        std::vector<Agent> _agents;
     };
 } // namespace robot_bullet
 

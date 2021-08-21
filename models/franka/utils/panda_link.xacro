@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda_link">
     <!-- Includes -->
-    <xacro:include filename="$(find franka_description)/robots/utils/panda_visual.xacro" />
-    <xacro:include filename="$(find franka_description)/robots/utils/panda_collision.xacro" />
-    <xacro:include filename="$(find franka_description)/robots/utils/panda_inertial.xacro" />
+    <xacro:include filename="panda_visual.xacro" />
+    <xacro:include filename="panda_collision.xacro" />
+    <xacro:include filename="panda_inertial.xacro" />
     <!-- Link -->
     <xacro:macro name="link" params="name visual:='' collision:='' inertial:='' *visual_block *collision_block *inertial_block">
         <link name="${ns}_${name}">

@@ -12,8 +12,8 @@ srcdir = "."
 blddir = "build"
 
 # Tools' name and directory
-tools = {"magnum_dynamics": "/home/bernardo/devs/magnum-dynamics/install",
-         "utils_cpp": "/home/bernardo/devs/utils-cpp/install"}
+tools = {"magnum_dynamics": "",
+         "utils_cpp": ""}
 
 
 def options(opt):
@@ -43,7 +43,7 @@ def configure(cfg):
     cfg.env.SUFFIX = "dylib" if cfg.env["DEST_OS"] == "darwin" else "so"
 
     # Load compiler configuration and generate clangd flags
-    cfg.load("compiler_cxx")  # cfg.load("clang_compilation_database")
+    cfg.load("compiler_cxx clang_compilation_database")
 
     # Define require libraries
     cfg.get_env()["requires"] += ["BULLET", "CORRADE"]
@@ -99,7 +99,6 @@ def build(bld):
             target=bld.get_env()["libname"],
             includes=includes_path,
             uselib=bld.get_env()["libs"],
-            cxxflags=bld.get_env()["CXXFLAGS"],
         )
     else:
         bld.stlib(
@@ -108,7 +107,6 @@ def build(bld):
             target=bld.get_env()["libname"],
             includes=includes_path,
             uselib=bld.get_env()["libs"],
-            cxxflags=bld.get_env()["CXXFLAGS"],
         )
 
     # Build executables

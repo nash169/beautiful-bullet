@@ -11,12 +11,12 @@
   <xacro:arg name="hardware_interface" default="EffortJointInterface"/>
 
   <!-- Arm -->
-  <xacro:include filename="$(find franka_description)/robots/panda_arm.xacro"/>
+  <xacro:include filename="panda_arm.xacro"/>
   <xacro:panda_arm ns="$(arg robot_name)" connected_to="world" xyz="0 0 0" rpy="0 0 0" visual="true" collision="true" inertial="true" hardware_interface="EffortJointInterface" />
 
   <!-- Hand -->
   <xacro:if value="$(arg load_hand)">
-    <xacro:include filename="$(find franka_description)/robots/panda_hand.xacro"/>
+    <xacro:include filename="panda_hand.xacro"/>
     <xacro:panda_hand ns="$(arg robot_name)" connected_to="$(arg robot_name)_link8" xyz="0 0 0" rpy="0 0 ${-pi/4}" visual="true" collision="true" inertial="true" hardware_interface="EffortJointInterface"/>
   </xacro:if>
 
