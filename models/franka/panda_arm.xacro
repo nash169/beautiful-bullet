@@ -67,6 +67,7 @@
             <xacro:inertial mass="0.54" xyz="0.0109695 0.0107965 0.0650411" rpy="0 0 0" ixx="0.000888868887021" ixy="-0.00012239074652" ixz="3.98699829666e-05" iyy="0.000888001373233" iyz="-9.33825115206e-05" izz="0.0007176834609" />
         </xacro:link>
 
+        <!-- add default mass = 0, damping for prismatic joints and remove dummy link between arm and hand, visual rotation correction -->
         <link name="${ns}_link8"/>
 
         <!-- Joints -->

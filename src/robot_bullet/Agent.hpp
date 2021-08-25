@@ -30,6 +30,10 @@ namespace robot_bullet {
             update();
         }
 
+        // No copy constructor (check explicit and default)
+        // Agent(const Agent&) = delete;
+
+        // Destroyer
         // ~Agent() { delete _body; }
 
         // Get body pointer
@@ -40,6 +44,14 @@ namespace robot_bullet {
 
         // Loader
         std::shared_ptr<utils::BulletLoader> loader() { return _loader; }
+
+        // Set pose
+        Agent& setPose(const double& x, const double& y, const double& z)
+        {
+            _body->setBasePos(btVector3(x, y, z));
+
+            return *this;
+        }
 
     protected:
         // Bullet MultiBody Object

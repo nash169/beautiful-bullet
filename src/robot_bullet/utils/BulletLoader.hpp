@@ -119,14 +119,15 @@ namespace robot_bullet {
                 else {
                     if (!fixedBase) {
                         // Get mass
-                        btScalar mass = root->inertial->mass;
+                        mass = root->inertial->mass;
 
                         // Get inertia and diagonalize it
-                        btVector3 inertiaDiag = inertiaDiagonal(root);
+                        inertiaDiag = inertiaDiagonal(root);
                     }
                 }
 
                 // Allocate MultiBody
+                // std::cout << "Num links: " << numLinks << std::endl;
                 btMultiBody* multibody = new btMultiBody(numLinks, mass, inertiaDiag, mass == 0, false);
 
                 // Recursively create the nodes
@@ -152,6 +153,7 @@ namespace robot_bullet {
 
             bool createMultiBodyRecursive(btMultiBody* multibody, const urdf::Link* node, int index = -1, int parentIndex = -2)
             {
+                std::cout << node->name << std::endl;
                 std::cout << "Setting link: " << index << " Parent link: " << parentIndex << std::endl;
 
                 // If not base link create connection
@@ -162,14 +164,14 @@ namespace robot_bullet {
                 }
 
                 // Create collision shape
+                std::cout << "Creating node shape..." << std::endl;
                 if (!createNodeShapes(multibody, node, index)) {
-                    std::cout << "Creating node shape..." << std::endl;
                     return false;
                 }
 
                 // Recursively create the nodes
                 for (std::size_t i = 0; i < node->child_links.size(); ++i) {
-                    if (!createMultiBodyRecursive(multibody, node->child_links[0].get(), index + 1 + i, index))
+                    if (!createMultiBodyRecursive(multibody, node->child_links[i].get(), index + 1 + i, index))
                         return false;
                 }
 
@@ -202,12 +204,14 @@ namespace robot_bullet {
                 btQuaternion parentRotToThis = offsetInB.getRotation() * offsetInA.inverse().getRotation();
 
                 // Set joint properties
-                multibody->getLink(index).m_jointDamping = joint->dynamics->damping;
-                multibody->getLink(index).m_jointFriction = joint->dynamics->friction;
-                multibody->getLink(index).m_jointLowerLimit = joint->limits->lower;
-                multibody->getLink(index).m_jointUpperLimit = joint->limits->upper;
-                multibody->getLink(index).m_jointMaxForce = joint->limits->effort;
-                multibody->getLink(index).m_jointMaxVelocity = joint->limits->velocity;
+                if (joint->type != urdf::Joint::FIXED) {
+                    multibody->getLink(index).m_jointDamping = joint->dynamics->damping;
+                    multibody->getLink(index).m_jointFriction = joint->dynamics->friction;
+                    multibody->getLink(index).m_jointLowerLimit = joint->limits->lower;
+                    multibody->getLink(index).m_jointUpperLimit = joint->limits->upper;
+                    multibody->getLink(index).m_jointMaxForce = joint->limits->effort;
+                    multibody->getLink(index).m_jointMaxVelocity = joint->limits->velocity;
+                }
 
                 // Set parent-child collision
                 bool disableParentCollision = true;
@@ -441,8 +445,9 @@ namespace robot_bullet {
             /* Base -> Node's parent joint */
             void jointFrameWorld(const urdf::Link* node, int index, btTransform& frameWorld)
             {
+                // std::cout << "hello" << std::endl;
                 frameWorld = jointFrame(node->parent_joint.get()) * frameWorld;
-                index--;
+                index = index - node->getParent()->child_links.size();
 
                 if (index >= 0) {
                     jointFrameWorld(node->getParent().get(), index, frameWorld);

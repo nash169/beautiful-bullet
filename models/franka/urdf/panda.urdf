@@ -12,15 +12,15 @@
   </joint>
   <link name="panda_link0">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link0.dae"/>
+        <mesh filename="../meshes/visual/link0.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link0.stl"/>
+        <mesh filename="../meshes/collision/link0.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -31,15 +31,15 @@
   </link>
   <link name="panda_link1">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link1.dae"/>
+        <mesh filename="../meshes/visual/link1.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link1.stl"/>
+        <mesh filename="../meshes/collision/link1.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -50,15 +50,15 @@
   </link>
   <link name="panda_link2">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link2.dae"/>
+        <mesh filename="../meshes/visual/link2.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link2.stl"/>
+        <mesh filename="../meshes/collision/link2.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -69,15 +69,15 @@
   </link>
   <link name="panda_link3">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link3.dae"/>
+        <mesh filename="../meshes/visual/link3.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link3.stl"/>
+        <mesh filename="../meshes/collision/link3.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -88,15 +88,15 @@
   </link>
   <link name="panda_link4">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link4.dae"/>
+        <mesh filename="../meshes/visual/link4.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link4.stl"/>
+        <mesh filename="../meshes/collision/link4.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -107,15 +107,15 @@
   </link>
   <link name="panda_link5">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link5.dae"/>
+        <mesh filename="../meshes/visual/link5.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link5.stl"/>
+        <mesh filename="../meshes/collision/link5.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -126,15 +126,15 @@
   </link>
   <link name="panda_link6">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link6.dae"/>
+        <mesh filename="../meshes/visual/link6.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link6.stl"/>
+        <mesh filename="../meshes/collision/link6.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -145,15 +145,15 @@
   </link>
   <link name="panda_link7">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link7.dae"/>
+        <mesh filename="../meshes/visual/link7.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/link7.stl"/>
+        <mesh filename="../meshes/collision/link7.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -162,7 +162,6 @@
       <inertia ixx="0.000888868887021" ixy="-0.00012239074652" ixz="3.98699829666e-05" iyy="0.000888001373233" iyz="-9.33825115206e-05" izz="0.0007176834609"/>
     </inertial>
   </link>
-  <link name="panda_link8"/>
   <joint name="panda_joint1" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973"/>
     <origin rpy="0 0 0" xyz="0 0 0.333"/>
@@ -225,12 +224,6 @@
     <axis xyz="0 0 1"/>
     <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.61"/>
     <dynamics damping="1.0"/>
-  </joint>
-  <joint name="panda_joint8" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0.107"/>
-    <parent link="panda_link7"/>
-    <child link="panda_link8"/>
-    <axis xyz="0 0 0"/>
   </joint>
   <transmission name="panda_tran1">
     <type>transmission_interface/SimpleTransmission</type>
@@ -343,21 +336,21 @@
     <mu2>0.2</mu2>
   </gazebo>
   <joint name="panda_hand_joint" type="fixed">
-    <parent link="panda_link8"/>
+    <parent link="panda_link7"/>
     <child link="panda_hand"/>
-    <origin rpy="0 0 -0.7853981633974483" xyz="0 0 0"/>
+    <origin rpy="0 0 -0.7853981633974483" xyz="0 0 0.107"/>
   </joint>
   <link name="panda_hand">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/hand.dae"/>
+        <mesh filename="../meshes/visual/hand.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/hand.stl"/>
+        <mesh filename="../meshes/collision/hand.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -368,15 +361,15 @@
   </link>
   <link name="panda_leftfinger">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/finger.dae"/>
+        <mesh filename="../meshes/visual/finger.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/finger.stl"/>
+        <mesh filename="../meshes/collision/finger.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -387,15 +380,15 @@
   </link>
   <link name="panda_rightfinger">
     <visual>
-      <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/finger.dae"/>
+        <mesh filename="../meshes/visual/finger.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/collision/finger.stl"/>
+        <mesh filename="../meshes/collision/finger.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -411,6 +404,7 @@
     <origin rpy="0 0 0" xyz="0 0 0.0584"/>
     <axis xyz="0 1 0"/>
     <limit effort="20" lower="-0.001" upper="0.04" velocity="0.3"/>
+    <dynamics damping="0.0"/>
   </joint>
   <joint name="panda_finger_joint2" type="prismatic">
     <parent link="panda_hand"/>
@@ -418,6 +412,7 @@
     <origin rpy="0 0 0" xyz="0 0 0.0584"/>
     <axis xyz="0 -1 0"/>
     <limit effort="20" lower="-0.001" upper="0.04" velocity="0.3"/>
+    <dynamics damping="0.0"/>
   </joint>
   <transmission name="panda_finger_tran1">
     <type>transmission_interface/SimpleTransmission</type>

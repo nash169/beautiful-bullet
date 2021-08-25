@@ -123,10 +123,10 @@ namespace robot_bullet {
         }
 
         template <typename... Args>
-        Simulator& addAgents(Agent&& agent, Args... args) // move the agent
+        Simulator& addAgents(const Agent& agent, Args... args) // move the agent
         {
             // Move agent inside simulator
-            _agents.push_back(agent);
+            _agents.push_back(std::move(agent));
 
             for (int i = -1; i < _agents.back().body()->getNumLinks(); i++) {
                 // std::cout << "Hello: " << i << std::endl;
@@ -164,10 +164,10 @@ namespace robot_bullet {
         }
 
         template <typename... Args>
-        Simulator& addObjects(Object&& object, Args... args) // move the agent
+        Simulator& addObjects(const Object& object, Args... args) // move the agent
         {
             // Move object
-            _objects.push_back(object);
+            _objects.push_back(std::move(object));
 
             // Add rigid body
             _world->addRigidBody(_objects.back().body());

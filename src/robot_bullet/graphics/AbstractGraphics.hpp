@@ -37,4 +37,4 @@ namespace robot_bullet {
     } // namespace graphics
 } // namespace robot_bullet
 
-#endif // ROBOTRAISIM_GUI_ABSTRACTGRAPHICS_HPP
+#endif // ROBOT_BULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP

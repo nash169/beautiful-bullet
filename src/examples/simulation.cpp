@@ -22,23 +22,32 @@ int main(int argc, char** argv)
     simulator.addGround();
 
     // Create object
-    BoxParams params;
-    params.setSize(0.5, 0.5, 0.5)
+    BoxParams params1, params2;
+    params1.setSize(0.5, 0.5, 0.5)
         .setMass(0.1)
         // .setFriction(0.5)
         .setPose(Eigen::Vector3d(0, 2, 10))
         .setColor("red");
 
-    Object cube("box", params);
+    params2 = params1;
+    params2.setPose(Eigen::Vector3d(0, -2, 10))
+        .setColor("green");
+
+    Object cube1("box", params1), cube2("box", params2);
 
     // Add object to simulator
-    simulator.addObjects(std::move(cube));
+    simulator.addObjects(cube1, cube2);
 
     // Create agent
-    Agent iiwa("models/iiwa/model.urdf");
+    Agent iiwaBullet("models/iiwa_bullet/model.urdf"),
+        iiwa("models/iiwa/urdf/iiwa14.urdf"),
+        franka("models/franka/urdf/panda.urdf");
+
+    iiwaBullet.setPose(2, -2, 0);
+    iiwa.setPose(2, 2, 0);
 
     // Add agent to simulator
-    simulator.addAgents(std::move(iiwa));
+    simulator.addAgents(iiwaBullet, iiwa, franka);
 
     // Run simulation
     simulator.run();
