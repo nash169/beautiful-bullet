@@ -1,5 +1,5 @@
-#ifndef ROBOT_BULLET_TYPES_HPP
-#define ROBOT_BULLET_TYPES_HPP
+#ifndef BEAUTIFUL_BULLET_TYPES_HPP
+#define BEAUTIFUL_BULLET_TYPES_HPP
 
 #include <Eigen/Geometry>
 
@@ -7,7 +7,7 @@
 #include <LinearMath/btTransform.h>
 #include <LinearMath/btVector3.h>
 
-namespace robot_bullet {
+namespace beautiful_bullet {
     // check here if it useful to depend on corrade
     enum class ObjectType : unsigned int {
         SPHERE = 1 << 0,
@@ -91,6 +91,6 @@ namespace robot_bullet {
         // Size
         btVector3 size;
     };
-} // namespace robot_bullet
+} // namespace beautiful_bullet
 
-#endif // ROBOT_BULLET_TYPES_HPP
+#endif // BEAUTIFUL_BULLET_TYPES_HPP

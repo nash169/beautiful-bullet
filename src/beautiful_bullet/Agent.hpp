@@ -1,5 +1,5 @@
-#ifndef ROBOT_BULLET_AGENT_HPP
-#define ROBOT_BULLET_AGENT_HPP
+#ifndef BEAUTIFUL_BULLET_AGENT_HPP
+#define BEAUTIFUL_BULLET_AGENT_HPP
 
 // Standard
 #include <iostream>
@@ -18,24 +18,25 @@
 #include <pinocchio/multibody/model.hpp>
 #include <pinocchio/parsers/urdf.hpp>
 
-#include "robot_bullet/utils/BulletLoader.hpp"
+#include "beautiful_bullet/Control.hpp"
+#include "beautiful_bullet/utils/BulletLoader.hpp"
 
-namespace robot_bullet {
+namespace beautiful_bullet {
     class Agent {
     public:
         /* Constructor */
-        Agent(const std::string& file)
+        Agent(const std::string& file, int flags = 0)
         {
             // Create loader
             _loader = std::make_shared<utils::BulletLoader>();
 
             // Get multibody
-            _body = _loader->parseMultiBody(file);
+            _body = _loader->parseMultiBody(file, flags);
 
             // Pinocchio model
             pinocchio::urdf::buildModel(file, _model);
             _data = pinocchio::Data(_model); // _model.gravity.linear(Eigen::Vector3d(0, 0, -9.81));
-            
+
             // Init agent internal state variable
             _q.setZero(_body->getNumDofs());
             _v.setZero(_body->getNumDofs());
@@ -49,8 +50,12 @@ namespace robot_bullet {
         // No copy constructor (check explicit and default)
         // Agent(const Agent&) = delete;
 
-        // Destroyer
-        // ~Agent() { delete _body; }
+        // // Destroyer
+        // ~Agent()
+        // {
+        //     for (auto& controller : _controllers)
+        //         delete controller;
+        // }
 
         /* Get multibody pointer */
         btMultiBody* body() { return _body; }
@@ -62,7 +67,7 @@ namespace robot_bullet {
         const Eigen::VectorXd& velocity() { return _v; }
 
         /* Get Bullet loader */
-        std::shared_ptr<utils::BulletLoader> loader(){return _loader;}
+        std::shared_ptr<utils::BulletLoader> loader() { return _loader; }
 
         /* Set agent (base) pose */
         Agent& setPose(const double& x, const double& y, const double& z)
@@ -91,6 +96,22 @@ namespace robot_bullet {
             return *this;
         }
 
+        /* Add controllers */
+        template <typename... Args>
+        Agent& addControllers(std::shared_ptr<Control> controller, Args... args)
+        {
+            // Add controller
+            _controllers.push_back(controller);
+
+            // Init controller
+            _controllers.back()->init();
+
+            if constexpr (sizeof...(args) > 0)
+                addControllers(args...);
+
+            return *this;
+        }
+
         /* Update model */
         void update()
         {
@@ -100,23 +121,23 @@ namespace robot_bullet {
                 _v(i) = _body->getJointVel(i);
             }
 
-            // Get non-linear effects for Pinocchio
-            const Eigen::VectorXd& tau = pinocchio::nonLinearEffects(_model, _data, _q, _v);
-            // const Eigen::VectorXd& tau = pinocchio::computeGeneralizedGravity(_model, _data, _q);
+            // Command force
+            Eigen::VectorXd tau = Eigen::VectorXd::Zero(_body->getNumDofs());
+
+            // Gravity compensation
+            tau += pinocchio::nonLinearEffects(_model, _data, _q, _v); // pinocchio::computeGeneralizedGravity(_model, _data, _q);
+
+            // Control
+            for (auto& controller : _controllers)
+                tau += controller->control(_q, _v);
 
             // Set gravity compensation
             for (size_t i = 0; i < _body->getNumDofs(); i++) {
-                double maxForce = _body->getLink(i).m_jointMaxForce,
-                       force;
+                // Clip force
+                clipForce(i, tau(i));
 
-                if (tau(i) >= maxForce)
-                    force = maxForce;
-                else if (tau(i) <= -maxForce)
-                    force = -maxForce;
-                else
-                    force = tau(i);
-
-                _body->addJointTorque(i, force);
+                // Apply force
+                _body->addJointTorque(i, tau(i));
             }
         }
 
@@ -136,7 +157,21 @@ namespace robot_bullet {
 
         // Root link inertia frame
         btTransform rootFrame;
-    }; // namespace robot_raisim
-} // namespace robot_bullet
 
-#endif // ROBOT_BULLET_AGENT_HPP
+        // Controllers
+        std::vector<std::shared_ptr<Control>> _controllers;
+
+        // Clip force
+        inline void clipForce(const int& index, double& force)
+        {
+            double maxForce = _body->getLink(index).m_jointMaxForce;
+
+            if (force >= maxForce)
+                force = maxForce;
+            else if (force <= -maxForce)
+                force = -maxForce;
+        }
+    };
+} // namespace beautiful_bullet
+
+#endif // BEAUTIFUL_BULLET_AGENT_HPP

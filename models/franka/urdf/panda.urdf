@@ -335,6 +335,8 @@
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
   </gazebo>
+</robot>
+  <!-- 
   <joint name="panda_hand_joint" type="fixed">
     <parent link="panda_link7"/>
     <child link="panda_hand"/>
@@ -378,25 +380,7 @@
       <inertia ixx="3.01220925051e-05" ixy="0.0" ixz="0.0" iyy="2.95873808038e-05" iyz="0.0" izz="6.95125211657e-06"/>
     </inertial>
   </link>
-  <link name="panda_rightfinger">
-    <visual>
-      <origin rpy="1.57079632679 0 3.141592653589793" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="../meshes/visual/finger.dae"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="../meshes/collision/finger.stl"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.1"/>
-      <origin rpy="0 0 3.141592653589793" xyz="0 0.0145644 0.0227941"/>
-      <inertia ixx="3.01220925051e-05" ixy="0.0" ixz="0.0" iyy="2.95873808038e-05" iyz="0.0" izz="6.95125211657e-06"/>
-    </inertial>
-  </link>
+  
   <!-- Joints -->
   <joint name="panda_finger_joint1" type="prismatic">
     <parent link="panda_hand"/>
@@ -448,5 +432,5 @@
     <material>Gazebo/Grey</material>
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-  </gazebo>
-</robot>
+  </gazebo> -->
+

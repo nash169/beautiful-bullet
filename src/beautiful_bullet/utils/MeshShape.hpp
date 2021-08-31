@@ -1,5 +1,5 @@
-#ifndef ROBOT_BULLET_UTILS_URDF_MESHSHAPE
-#define ROBOT_BULLET_UTILS_URDF_MESHSHAPE
+#ifndef BEAUTIFUL_BULLET_UTILS_URDF_MESHSHAPE
+#define BEAUTIFUL_BULLET_UTILS_URDF_MESHSHAPE
 
 #include <iostream>
 
@@ -11,7 +11,7 @@
 
 #include <assimp/cimport.h>
 
-namespace robot_bullet {
+namespace beautiful_bullet {
     namespace utils {
 
         class MeshShape {
@@ -103,5 +103,5 @@ namespace robot_bullet {
             // Assimp::Importer _importer;
         };
     } // namespace utils
-} // namespace robot_bullet
-#endif // ROBOT_BULLET_UTILS_URDF_MESHSHAPE
+} // namespace beautiful_bullet
+#endif // BEAUTIFUL_BULLET_UTILS_URDF_MESHSHAPE

@@ -1,10 +1,10 @@
 
-#ifndef ROBOT_BULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
-#define ROBOT_BULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#ifndef BEAUTIFUL_BULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#define BEAUTIFUL_BULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
 
 #include <cstddef>
 
-namespace robot_bullet {
+namespace beautiful_bullet {
     class Simulator;
 
     namespace graphics {
@@ -35,6 +35,6 @@ namespace robot_bullet {
             size_t _frameCounter, _renderPeriod, _desiredFPS;
         };
     } // namespace graphics
-} // namespace robot_bullet
+} // namespace beautiful_bullet
 
-#endif // ROBOT_BULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#endif // BEAUTIFUL_BULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP

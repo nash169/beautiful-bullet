@@ -1,5 +1,5 @@
-#ifndef ROBOT_BULLET_UTILS_URDF_BULLETLOADER
-#define ROBOT_BULLET_UTILS_URDF_BULLETLOADER
+#ifndef BEAUTIFUL_BULLET_UTILS_URDF_BULLETLOADER
+#define BEAUTIFUL_BULLET_UTILS_URDF_BULLETLOADER
 
 // std library
 #include <string>
@@ -16,39 +16,11 @@
 #include <urdf_world/world.h>
 
 // robot bullet
-#include "robot_bullet/utils/MeshShape.hpp"
+#include "beautiful_bullet/utils/LoadFlags.hpp"
+#include "beautiful_bullet/utils/MeshShape.hpp"
 
-namespace robot_bullet {
+namespace beautiful_bullet {
     namespace utils {
-        enum ConvertURDFFlags {
-            CUF_USE_SDF = 1,
-            // Use inertia values in URDF instead of recomputing them from collision shape.
-            CUF_USE_URDF_INERTIA = 2,
-            CUF_USE_MJCF = 4,
-            CUF_USE_SELF_COLLISION = 8,
-            CUF_USE_SELF_COLLISION_EXCLUDE_PARENT = 16,
-            CUF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS = 32,
-            CUF_RESERVED = 64,
-            CUF_USE_IMPLICIT_CYLINDER = 128,
-            CUF_GLOBAL_VELOCITIES_MB = 256,
-            CUF_MJCF_COLORS_FROM_FILE = 512,
-            CUF_ENABLE_CACHED_GRAPHICS_SHAPES = 1024,
-            CUF_ENABLE_SLEEPING = 2048,
-            CUF_INITIALIZE_SAT_FEATURES = 4096,
-            CUF_USE_SELF_COLLISION_INCLUDE_PARENT = 8192,
-            CUF_PARSE_SENSORS = 16384,
-            CUF_USE_MATERIAL_COLORS_FROM_MTL = 32768,
-            CUF_USE_MATERIAL_TRANSPARANCY_FROM_MTL = 65536,
-            CUF_MAINTAIN_LINK_ORDER = 131072,
-            CUF_ENABLE_WAKEUP = 1 << 18,
-            CUF_MERGE_FIXED_LINKS = 1 << 19,
-            CUF_IGNORE_VISUAL_SHAPES = 1 << 20,
-            CUF_IGNORE_COLLISION_SHAPES = 1 << 21,
-            CUF_PRINT_URDF_INFO = 1 << 22,
-            CUF_GOOGLEY_UNDEFINED_COLORS = 1 << 23,
-
-        };
-
         class BulletLoader {
         public:
             BulletLoader() : _collisionMargin(0.001) {}
@@ -57,7 +29,7 @@ namespace robot_bullet {
 
             // URDF link: http://wiki.ros.org/urdf/XML/link
             // URDF joint: http://wiki.ros.org/urdf/XML/joint
-            btMultiBody* parseMultiBody(const std::string& file, const bool& fixedBase = false) // Passing the world (change this)
+            btMultiBody* parseMultiBody(const std::string& file, const int& flags, const bool& fixedBase = false) // Passing the world (change this)
             {
                 // Check if the string is empty
                 if (file.empty()) {
@@ -75,6 +47,9 @@ namespace robot_bullet {
                     std::cerr << "Failed loading URDF." << std::endl;
                     return nullptr;
                 }
+
+                // Store flags
+                _flags = flags;
 
                 return modelIntefaceToMultiBody(fixedBase);
             }
@@ -95,7 +70,10 @@ namespace robot_bullet {
             // Collision margin
             btScalar _collisionMargin;
 
-            btMultiBody* modelIntefaceToMultiBody(const bool& fixedBase = false)
+            // Flags
+            int _flags;
+
+            btMultiBody* modelIntefaceToMultiBody(const bool& fixedBase)
             {
                 // Get root link (how to handle the case of multi-tree robot?)
                 const urdf::Link* root = _model->getRoot().get();
@@ -137,7 +115,7 @@ namespace robot_bullet {
                 }
 
                 // Finalize multibody
-                multibody->setHasSelfCollision((false & CUF_USE_SELF_COLLISION) != 0);
+                multibody->setHasSelfCollision((_flags & CUF_USE_SELF_COLLISION) != 0);
 
                 multibody->finalizeMultiDof();
 
@@ -326,11 +304,10 @@ namespace robot_bullet {
 
                     multibody->getLink(index).m_collider = collider;
 
-                    bool flags = false; // put it here for now
-                    if (flags & CUF_USE_SELF_COLLISION_INCLUDE_PARENT) {
+                    if (_flags & CUF_USE_SELF_COLLISION_INCLUDE_PARENT) {
                         multibody->getLink(index).m_flags &= ~BT_MULTIBODYLINKFLAGS_DISABLE_PARENT_COLLISION;
                     }
-                    if (flags & CUF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS) {
+                    if (_flags & CUF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS) {
                         multibody->getLink(index).m_flags |= BT_MULTIBODYLINKFLAGS_DISABLE_ALL_PARENT_COLLISION;
                     }
                 }
@@ -420,6 +397,9 @@ namespace robot_bullet {
 
                     convexHull->recalcLocalAabb();
                     convexHull->optimizeConvexHull();
+
+                    // if (flags & CUF_INITIALIZE_SAT_FEATURES)
+                    //     convexHull->initializePolyhedralFeatures();
 
                     compound->addChildShape(identity, convexHull);
                 }
@@ -511,6 +491,6 @@ namespace robot_bullet {
             }
         };
     } // namespace utils
-} // namespace robot_bullet
+} // namespace beautiful_bullet
 
-#endif // ROBOT_BULLET_UTILS_URDF_BULLETLOADER
+#endif // BEAUTIFUL_BULLET_UTILS_URDF_BULLETLOADER

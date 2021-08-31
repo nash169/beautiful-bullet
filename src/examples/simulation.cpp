@@ -1,12 +1,12 @@
 #include <iostream>
 
-#include <robot_bullet/Simulator.hpp>
+#include <beautiful_bullet/Simulator.hpp>
 
 #ifdef GRAPHICS
-#include <robot_bullet/graphics/MagnumGraphics.hpp>
+#include <beautiful_bullet/graphics/MagnumGraphics.hpp>
 #endif
 
-using namespace robot_bullet;
+using namespace beautiful_bullet;
 
 int main(int argc, char** argv)
 {

@@ -1,13 +1,14 @@
-#ifndef ROBOT_BULLET_OBJECT_HPP
-#define ROBOT_BULLET_OBJECT_HPP
+#ifndef BEAUTIFUL_BULLET_OBJECT_HPP
+#define BEAUTIFUL_BULLET_OBJECT_HPP
 
 #include <memory>
 
-#include "robot_bullet/Types.hpp"
+#include "beautiful_bullet/Control.hpp"
+#include "beautiful_bullet/Types.hpp"
 
 #include <BulletCollision/btBulletCollisionCommon.h>
 
-namespace robot_bullet {
+namespace beautiful_bullet {
     class Object {
     public:
         // Constructor
@@ -44,6 +45,12 @@ namespace robot_bullet {
         // No copy constructor (check explicit and default)
         // Object(const Object&) = delete; // it might not work just because I'm with clang
 
+        // ~Object()
+        // {
+        //     for (auto& controller : _controllers)
+        //         delete controller;
+        // }
+
         // Get type
         const ObjectType& type() const { return _type; }
 
@@ -52,6 +59,18 @@ namespace robot_bullet {
 
         // Get body pointer
         btRigidBody* body() { return _body; }
+
+        // // Add controllers
+        // template <typename... Args>
+        // Object& addControllers(Control* controller, Args... args)
+        // {
+        //     _controllers.push_back(controller);
+
+        //     if constexpr (sizeof...(args) > 0)
+        //         addControllers(args...);
+
+        //     return *this;
+        // }
 
         // Update model
         void update() {}
@@ -65,6 +84,9 @@ namespace robot_bullet {
 
         // Object color
         std::string _color;
+
+        // // Controllers
+        // std::vector<Control*> _controllers;
 
         // Create Rigid Body
         btRigidBody* createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)
@@ -92,6 +114,6 @@ namespace robot_bullet {
             return body;
         }
     }; // namespace robot_raisim
-} // namespace robot_bullet
+} // namespace beautiful_bullet
 
-#endif // ROBOT_BULLET_OBJECT_HPP
+#endif // BEAUTIFUL_BULLET_OBJECT_HPP

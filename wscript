@@ -6,14 +6,15 @@ import os.path as osp
 import fnmatch
 
 VERSION = "1.0.0"
-APPNAME = "robot-bullet"
+APPNAME = "beautiful-bullet"
 
 srcdir = "."
 blddir = "build"
 
 # Tools' name and directory
-tools = {"magnum_dynamics": "",
-         "utils_cpp": ""}
+tools = {"magnum_dynamics": "/Users/bernardo/Developments/magnum-dynamics/install",
+         "utils_cpp": "/Users/bernardo/Developments/utils-cpp/install",
+         "control_lib": "/Users/bernardo/Developments/control-lib/install"}
 
 
 def options(opt):
@@ -71,7 +72,7 @@ def configure(cfg):
 
 def build(bld):
     # Library name
-    bld.get_env()["libname"] = "RobotBullet"
+    bld.get_env()["libname"] = "BeautifulBullet"
 
     # Includes
     includes = []
@@ -84,7 +85,7 @@ def build(bld):
 
     # Sources
     sources = []
-    sources_path = "src/robot_bullet"
+    sources_path = "src/beautiful_bullet"
     for root, _, filenames in os.walk(
             osp.join(bld.path.abspath(), sources_path)):
         for filename in fnmatch.filter(filenames, "*.cpp"):
@@ -130,7 +131,7 @@ def build(bld):
         )
 
     # Install tools
-    bld.install_files("${PREFIX}/share/waf", "scripts/robot_bullet.py")
+    bld.install_files("${PREFIX}/share/waf", "scripts/beautiful_bullet.py")
     bld.install_files("${PREFIX}/share/waf", "waf_tools/utils.py")
 
 # for root, dirs, files in os.walk(directory):

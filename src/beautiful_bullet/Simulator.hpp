@@ -1,5 +1,5 @@
-#ifndef ROBOT_BULLET_SIMULATOR_HPP
-#define ROBOT_BULLET_SIMULATOR_HPP
+#ifndef BEAUTIFUL_BULLET_SIMULATOR_HPP
+#define BEAUTIFUL_BULLET_SIMULATOR_HPP
 
 #include <cmath>
 #include <memory>
@@ -17,11 +17,11 @@
 
 #include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
 
-#include "robot_bullet/Agent.hpp"
-#include "robot_bullet/Object.hpp"
-#include "robot_bullet/graphics/AbstractGraphics.hpp"
+#include "beautiful_bullet/Agent.hpp"
+#include "beautiful_bullet/Object.hpp"
+#include "beautiful_bullet/graphics/AbstractGraphics.hpp"
 
-namespace robot_bullet {
+namespace beautiful_bullet {
     enum MyFilterModes {
         FILTER_GROUPAMASKB_AND_GROUPBMASKA2 = 0,
         FILTER_GROUPAMASKB_OR_GROUPBMASKA2
@@ -75,7 +75,8 @@ namespace robot_bullet {
 
             // solver
             // _mlcp = new btLemkeSolver();
-            _solver = new btMultiBodyConstraintSolver; //btMultiBodyMLCPConstraintSolver(_mlcp)
+            // _solver = new btMultiBodyMLCPConstraintSolver(_mlcp);
+            _solver = new btMultiBodyConstraintSolver;
 
             // create dynamics world
             _world = new btMultiBodyDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
@@ -171,7 +172,8 @@ namespace robot_bullet {
         Simulator& addAgents(const Agent& agent, Args... args) // move the agent
         {
             // Move agent inside simulator
-            _agents.push_back(std::move(agent));
+            _agents.push_back(agent);
+            // _agents.push_back(std::move(agent));
 
             for (int i = -1; i < _agents.back().body()->getNumLinks(); i++) {
                 if (i >= 0) {
@@ -207,6 +209,7 @@ namespace robot_bullet {
             return *this;
         }
 
+        /* Run simulation */
         void run(double runTime = -1)
         {
             // Reset clock
@@ -272,6 +275,6 @@ namespace robot_bullet {
         /* Agents */
         std::vector<Agent> _agents;
     };
-} // namespace robot_bullet
+} // namespace beautiful_bullet
 
-#endif // ROBOT_BULLET_SIMULATOR_HPP
+#endif // BEAUTIFUL_BULLET_SIMULATOR_HPP
