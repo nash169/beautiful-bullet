@@ -18,11 +18,10 @@ namespace robot_bullet {
                 _type = ObjectType::BOX;
 
                 /* Set box color */
-                _color = params.color;
+                _color = params.color; // memorize only for graphics (not very clean)
 
                 /* Create box shape */
                 btBoxShape* box_shape = new btBoxShape(static_cast<const BoxParams&>(params).size);
-                // simulator.getCollisionShapes().push_back(box_shape);
 
                 /* Create box rigid body */
                 _body = createRigidBody(params.mass, params.transform, box_shape);
@@ -39,6 +38,11 @@ namespace robot_bullet {
                 return;
             }
         }
+
+        Object() = default;
+
+        // No copy constructor (check explicit and default)
+        // Object(const Object&) = delete; // it might not work just because I'm with clang
 
         // Get type
         const ObjectType& type() const { return _type; }

@@ -9,6 +9,12 @@
 #include <BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h>
 #include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
 #include <BulletDynamics/Featherstone/btMultiBodyLinkCollider.h>
+
+#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
+#include "BulletDynamics/MLCPSolvers/btLemkeSolver.h"
+#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
+#include <BulletDynamics/Featherstone/btMultiBodyMLCPConstraintSolver.h>
+
 #include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
 
 #include "robot_bullet/Agent.hpp"
@@ -52,10 +58,11 @@ namespace robot_bullet {
 
     class Simulator {
     public:
-        Simulator() : _timeStep(0.001)
+        Simulator() : _timeStep(1e-3)
         {
             // collision configuration contains default setup for memory, collision setup
-            _collisionConfiguration = new btDefaultCollisionConfiguration(); // _collisionConfiguration->setConvexConvexMultipointIterations();
+            _collisionConfiguration = new btDefaultCollisionConfiguration();
+            // _collisionConfiguration->setConvexConvexMultipointIterations();
 
             // use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
             _dispatcher = new btCollisionDispatcher(_collisionConfiguration);
@@ -67,7 +74,8 @@ namespace robot_bullet {
             _broadphase = new btDbvtBroadphase(_pairCache); // btSimpleBroadphase();
 
             // solver
-            _solver = new btMultiBodyConstraintSolver;
+            // _mlcp = new btLemkeSolver();
+            _solver = new btMultiBodyConstraintSolver; //btMultiBodyMLCPConstraintSolver(_mlcp)
 
             // create dynamics world
             _world = new btMultiBodyDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
@@ -76,11 +84,10 @@ namespace robot_bullet {
             _world->setGravity(btVector3(0, 0, -9.81));
         }
 
+        /* Cleanup in the reverse order of creation/initialization */
         ~Simulator()
         {
-            //cleanup in the reverse order of creation/initialization
-
-            //remove the rigidbodies from the dynamics world and delete them
+            // remove the rigidbodies from the dynamics world and delete them
             for (int i = _world->getNumCollisionObjects() - 1; i >= 0; i--) {
                 btCollisionObject* obj = _world->getCollisionObjectArray()[i];
                 btRigidBody* body = btRigidBody::upcast(obj);
@@ -91,7 +98,7 @@ namespace robot_bullet {
                 delete obj;
             }
 
-            //delete collision shapes
+            // delete collision shapes
             for (int j = 0; j < _collisionShapes.size(); j++) {
                 btCollisionShape* shape = _collisionShapes[j];
                 delete shape;
@@ -109,6 +116,24 @@ namespace robot_bullet {
             delete _collisionConfiguration;
         }
 
+        /* Get DynamicsWorld object */
+        btMultiBodyDynamicsWorld* world() { return _world; }
+
+        /* Get agents */
+        std::vector<Agent>& agents() { return _agents; }
+
+        /* Get objects */
+        std::vector<Object>& objects() { return _objects; }
+
+        /* Set graphics */
+        Simulator& setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
+        {
+            _graphics = std::move(graphics);
+
+            return *this;
+        }
+
+        /* Add ground into the simulation */
         Simulator& addGround()
         {
             // Ground parameters
@@ -122,6 +147,26 @@ namespace robot_bullet {
             return addObjects(Object("box", params));
         }
 
+        /* Add (rigidbody) object into the simulation */
+        template <typename... Args>
+        Simulator& addObjects(const Object& object, Args... args) // move the agent
+        {
+            // Move object
+            _objects.push_back(std::move(object));
+
+            // Add rigid body
+            _world->addRigidBody(_objects.back().body());
+
+            // Add collision shape
+            _collisionShapes.push_back(_objects.back().body()->getCollisionShape());
+
+            if constexpr (sizeof...(args) > 0)
+                addObjects(args...);
+
+            return *this;
+        }
+
+        /* Add (multibody) agent into the simulation */
         template <typename... Args>
         Simulator& addAgents(const Agent& agent, Args... args) // move the agent
         {
@@ -129,7 +174,6 @@ namespace robot_bullet {
             _agents.push_back(std::move(agent));
 
             for (int i = -1; i < _agents.back().body()->getNumLinks(); i++) {
-                // std::cout << "Hello: " << i << std::endl;
                 if (i >= 0) {
                     // Add joint constraints to the world
                     if (_agents.back().body()->getLink(i).m_jointType == btMultibodyLink::eRevolute || _agents.back().body()->getLink(i).m_jointType == btMultibodyLink::ePrismatic)
@@ -163,33 +207,6 @@ namespace robot_bullet {
             return *this;
         }
 
-        template <typename... Args>
-        Simulator& addObjects(const Object& object, Args... args) // move the agent
-        {
-            // Move object
-            _objects.push_back(std::move(object));
-
-            // Add rigid body
-            _world->addRigidBody(_objects.back().body());
-
-            // Add collision shape
-            _collisionShapes.push_back(_objects.back().body()->getCollisionShape());
-
-            if constexpr (sizeof...(args) > 0)
-                addObjects(args...);
-
-            return *this;
-        }
-
-        std::vector<Agent>& agents() { return _agents; }
-
-        std::vector<Object>& objects() { return _objects; }
-
-        void setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
-        {
-            _graphics = std::move(graphics);
-        }
-
         void run(double runTime = -1)
         {
             // Reset clock
@@ -199,14 +216,21 @@ namespace robot_bullet {
             _graphics->init(*this);
 
             while (runTime < 0 || _clock * _timeStep <= runTime) {
+                // Update objects
+                for (auto& object : _objects)
+                    object.update();
+
+                // Update agents
+                for (auto& agent : _agents)
+                    agent.update();
+
                 // Simulation step
                 _world->stepSimulation(_timeStep);
 
                 // Refresh graphics
-                if (_clock % _graphics->desiredFPS() == 0) {
+                if (_clock % _graphics->desiredFPS() == 0)
                     if (!_graphics->refresh())
                         break;
-                }
 
                 // Increment clock
                 _clock++;
@@ -226,6 +250,7 @@ namespace robot_bullet {
         btBroadphaseInterface* _broadphase;
 
         /* Multibody Constraints Solver */
+        // btMLCPSolverInterface* _mlcp;
         btMultiBodyConstraintSolver* _solver; // btSequentialImpulseConstraintSolver
 
         /* Multibody Dynamic World */

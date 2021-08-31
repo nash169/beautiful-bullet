@@ -12,8 +12,8 @@ srcdir = "."
 blddir = "build"
 
 # Tools' name and directory
-tools = {"magnum_dynamics": "/Users/bernardo/Developments/magnum-dynamics/install",
-         "utils_cpp": "/Users/bernardo/Developments/utils-cpp/install"}
+tools = {"magnum_dynamics": "",
+         "utils_cpp": ""}
 
 
 def options(opt):
@@ -26,7 +26,7 @@ def options(opt):
             tools[key], "share/waf"))
 
     # Load tools options
-    opt.load("flags bullet corrade urdfdom assimp", tooldir="waf_tools")
+    opt.load("flags bullet urdfdom assimp pinocchio", tooldir="waf_tools")
 
     # Add options
     opt.add_option("--shared",
@@ -46,7 +46,7 @@ def configure(cfg):
     cfg.load("compiler_cxx clang_compilation_database")
 
     # Define require libraries
-    cfg.get_env()["requires"] += ["BULLET", "CORRADE"]
+    cfg.get_env()["requires"] += ["EIGEN", "BULLET"]
 
     # Load personal tools configurations
     for key in tools:
@@ -57,7 +57,7 @@ def configure(cfg):
     cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common,BulletInverseDynamicsUtils"
 
     # Load tools configuration
-    cfg.load("flags bullet corrade urdfdom assimp", tooldir="waf_tools")
+    cfg.load("flags eigen bullet urdfdom assimp pinocchio", tooldir="waf_tools")
 
     # Remove duplicates
     cfg.get_env()["libs"] = list(set(cfg.get_env()["libs"]))

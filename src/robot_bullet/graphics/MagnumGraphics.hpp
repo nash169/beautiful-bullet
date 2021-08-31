@@ -113,17 +113,13 @@ namespace robot_bullet {
 
             bool createVisualRecursive(const urdf::ModelInterface* model, const urdf::Link* node, btMultiBody* multibody, const std::string& path, int index = -1)
             {
-                for (auto& visual : node->visual_array) {
-                    // Origin
-                    btTransform transformVisual;
-                    transformVisual.setIdentity();
-                    transformVisual.setOrigin(btVector3(visual->origin.position.x, visual->origin.position.y, visual->origin.position.z));
-                    transformVisual.setRotation(btQuaternion(visual->origin.rotation.x, visual->origin.rotation.y, visual->origin.rotation.z, visual->origin.rotation.w));
+                for (auto& collision : node->collision_array) {
+                    // Collision
+                    btTransform transformCollision = linkFrames(collision.get());
 
-                    // Geometry
-                    switch (visual->geometry->type) {
+                    switch (collision->geometry->type) {
                     case urdf::Geometry::SPHERE: {
-                        urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(visual->geometry.get());
+                        urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(collision->geometry.get());
 
                         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
@@ -132,7 +128,7 @@ namespace robot_bullet {
                         break;
                     }
                     case urdf::Geometry::BOX: {
-                        urdf::Box* box = dynamic_cast<urdf::Box*>(visual->geometry.get());
+                        urdf::Box* box = dynamic_cast<urdf::Box*>(collision->geometry.get());
 
                         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
@@ -141,7 +137,7 @@ namespace robot_bullet {
                         break;
                     }
                     case urdf::Geometry::CYLINDER: {
-                        urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(visual->geometry.get());
+                        urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(collision->geometry.get());
 
                         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
@@ -150,25 +146,10 @@ namespace robot_bullet {
                         break;
                     }
                     case urdf::Geometry::MESH: {
-                        urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(visual->geometry.get());
+                        urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(collision->geometry.get());
 
-                        // temp.setIdentity();
-                        // jointFrameWorld(node, index, temp);
-
-                        std::cout << node->name << std::endl;
-                        // add visual frame transformation
-                        // if (index >= 8) {
-                        auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename)
-                                                                           //    .addPriorTransformation(Matrix4(temp)),
-                                                                           .addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformVisual) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))), //
-                            (index == -1)
-                                ? &multibody->getBaseCollider()->getWorldTransform()
-                                : &multibody->getLinkCollider(index)->getWorldTransform()));
-                        // it.first->first->addPriorTransformation(Matrix4(*it.first->second) * Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformVisual)); // Matrix4(inertiaFrame(node).inverse()) *
-
-                        if (visual->material)
-                            it.first->first->setColor(Color4(visual->material->color.r, visual->material->color.g, visual->material->color.b, visual->material->color.a));
-                        // }
+                        auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename).addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformCollision) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 
                         break;
                     }
@@ -177,12 +158,87 @@ namespace robot_bullet {
                     }
                 }
 
+                // for (auto& visual : node->visual_array) {
+                //     // Origin
+                //     btTransform transformVisual;
+                //     transformVisual.setIdentity();
+                //     transformVisual.setOrigin(btVector3(visual->origin.position.x, visual->origin.position.y, visual->origin.position.z));
+                //     transformVisual.setRotation(btQuaternion(visual->origin.rotation.x, visual->origin.rotation.y, visual->origin.rotation.z, visual->origin.rotation.w));
+
+                //     // Geometry
+                //     switch (visual->geometry->type) {
+                //     case urdf::Geometry::SPHERE: {
+                //         urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(visual->geometry.get());
+
+                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
+                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
+                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                //         break;
+                //     }
+                //     case urdf::Geometry::BOX: {
+                //         urdf::Box* box = dynamic_cast<urdf::Box*>(visual->geometry.get());
+
+                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
+                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
+                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                //         break;
+                //     }
+                //     case urdf::Geometry::CYLINDER: {
+                //         urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(visual->geometry.get());
+
+                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
+                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
+                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                //         break;
+                //     }
+                //     case urdf::Geometry::MESH: {
+                //         urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(visual->geometry.get());
+
+                //         // temp.setIdentity();
+                //         // jointFrameWorld(node, index, temp);
+
+                //         std::cout << node->name << std::endl;
+                //         // add visual frame transformation
+                //         // if (index >= 8) {
+                //         auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename)
+                //                                                            //    .addPriorTransformation(Matrix4(temp)),
+                //                                                            .addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformVisual) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))), //
+                //             (index == -1)
+                //                 ? &multibody->getBaseCollider()->getWorldTransform()
+                //                 : &multibody->getLinkCollider(index)->getWorldTransform()));
+                //         // it.first->first->addPriorTransformation(Matrix4(*it.first->second) * Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformVisual)); // Matrix4(inertiaFrame(node).inverse()) *
+
+                //         if (visual->material)
+                //             it.first->first->setColor(Color4(visual->material->color.r, visual->material->color.g, visual->material->color.b, visual->material->color.a));
+                //         // }
+
+                //         break;
+                //     }
+                //     default:
+                //         return false;
+                //     }
+                // }
+
                 for (std::size_t i = 0; i < node->child_links.size(); ++i) {
                     if (!createVisualRecursive(model, node->child_links[i].get(), multibody, path, index + 1 + i))
                         return false;
                 }
 
                 return true;
+            }
+
+            template <typename Type>
+            btTransform linkFrames(const Type* type)
+            {
+                btTransform frame;
+                frame.setIdentity();
+                frame.setOrigin(btVector3(type->origin.position.x, type->origin.position.y, type->origin.position.z));
+                frame.setRotation(btQuaternion(type->origin.rotation.x, type->origin.rotation.y, type->origin.rotation.z, type->origin.rotation.w));
+
+                return frame;
             }
 
             /* Node's parent joint -> inertia frame */
