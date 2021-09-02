@@ -47,7 +47,7 @@ namespace beautiful_bullet {
             bool init(Simulator& simulator) override
             {
                 // Set camera pose
-                _app->camera()->setPose({10., 0., 5.});
+                _app->camera()->setPose({6., 0., 2.});
 
                 // Add objects to graphics
                 for (auto& object : simulator.objects()) {
@@ -150,7 +150,7 @@ namespace beautiful_bullet {
                 for (auto& visual : node->visual_array) {
                     // Origin
                     btTransform transformVisual = linkFrames(visual.get());
-                    
+
                     // Geometry
                     switch (visual->geometry->type) {
                     case urdf::Geometry::SPHERE: {
@@ -185,7 +185,7 @@ namespace beautiful_bullet {
 
                         // add visual frame transformation
                         auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename).addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformVisual) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))),
-                            (index == -1)? &multibody->getBaseCollider()->getWorldTransform(): &multibody->getLinkCollider(index)->getWorldTransform()));
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 
                         if (visual->material)
                             it.first->first->setColor(Color4(visual->material->color.r, visual->material->color.g, visual->material->color.b, visual->material->color.a));
