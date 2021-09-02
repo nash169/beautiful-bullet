@@ -17,7 +17,7 @@
   <!-- Hand -->
   <xacro:if value="$(arg load_hand)">
     <xacro:include filename="panda_hand.xacro"/>
-    <xacro:panda_hand ns="$(arg robot_name)" connected_to="$(arg robot_name)_link8" xyz="0 0 0" rpy="0 0 ${-pi/4}" visual="true" collision="true" inertial="true" hardware_interface="EffortJointInterface"/>
+    <xacro:panda_hand ns="$(arg robot_name)" connected_to="$(arg robot_name)_link7" xyz="0 0 0" rpy="0 0 ${-pi/4}" visual="true" collision="true" inertial="true" hardware_interface="EffortJointInterface"/>
   </xacro:if>
 
   <!-- Gazebo control plugin -->

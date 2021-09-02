@@ -18,7 +18,7 @@
             </joint>
         </xacro:unless>
 
-        <!-- Links  -->
+        <!-- Links -->
         <xacro:link name="link0" visual="${visual}" collision="${collision}" inertial="${inertial}">
             <xacro:visual xyz="${xyz}" rpy="${rpy}" mesh="link0" />
             <xacro:collision xyz="${xyz}" rpy="${rpy}" mesh="link0" />
@@ -68,7 +68,7 @@
         </xacro:link>
 
         <!-- add default mass = 0, damping for prismatic joints and remove dummy link between arm and hand, visual rotation correction -->
-        <link name="${ns}_link8"/>
+        <!-- <link name="${ns}_link8"/> -->
 
         <!-- Joints -->
         <xacro:joint name="joint1" type="revolute" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" rpy="0 0 0" xyz="0 0 0.333" parent="link0" child="link1" limit_effort="87" limit_lower="-2.8973" limit_upper="2.8973" limit_velocity="2.1750"/>
@@ -79,7 +79,7 @@
         <xacro:joint name="joint5" type="revolute" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" rpy="${-pi/2} 0 0" xyz="-0.0825 0.384 0" parent="link4" child="link5" limit_effort="12" limit_lower="-2.8973" limit_upper="2.8973" limit_velocity="2.6100"/>
         <xacro:joint name="joint6" type="revolute" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" rpy="${pi/2} 0 0" xyz="0 0 0" parent="link5" child="link6" limit_effort="12" limit_lower="-0.0175" limit_upper="3.7525" limit_velocity="2.6100"/>
         <xacro:joint name="joint7" type="revolute" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" rpy="${pi/2} 0 0" xyz="0.088 0 0" parent="link6" child="link7" limit_effort="12" limit_lower="-2.8973" limit_upper="2.8973" limit_velocity="2.6100"/>
-        <xacro:joint name="joint8" type="fixed" parent="link7" child="link8" rpy="0 0 0" xyz="0 0 0.107"/>
+        <!-- <xacro:joint name="joint8" type="fixed" parent="link7" child="link8" rpy="0 0 0" xyz="0 0 0.107"/> -->
 
         <!-- Transmissions -->
         <xacro:transmission name="tran1" joint="joint1" motor="motor1" hardware_interface="${hardware_interface}" />
