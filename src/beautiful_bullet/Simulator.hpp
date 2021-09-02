@@ -172,8 +172,7 @@ namespace beautiful_bullet {
         Simulator& addAgents(const Agent& agent, Args... args) // move the agent
         {
             // Move agent inside simulator
-            _agents.push_back(agent);
-            // _agents.push_back(std::move(agent));
+            _agents.push_back(std::move(agent)); // it does not seem to be working
 
             for (int i = -1; i < _agents.back().body()->getNumLinks(); i++) {
                 if (i >= 0) {
@@ -228,7 +227,7 @@ namespace beautiful_bullet {
                     agent.update();
 
                 // Simulation step
-                _world->stepSimulation(_timeStep);
+                _world->stepSimulation(_timeStep, 0);
 
                 // Refresh graphics
                 if (_clock % _graphics->desiredFPS() == 0)
@@ -254,6 +253,7 @@ namespace beautiful_bullet {
 
         /* Multibody Constraints Solver */
         // btMLCPSolverInterface* _mlcp;
+        // btMultiBodyMLCPConstraintSolver* _solver;
         btMultiBodyConstraintSolver* _solver; // btSequentialImpulseConstraintSolver
 
         /* Multibody Dynamic World */

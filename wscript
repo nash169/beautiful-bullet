@@ -55,7 +55,7 @@ def configure(cfg):
             tools[key], "share/waf"))
 
     # Bullet components
-    cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common,BulletInverseDynamicsUtils"
+    cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common"
 
     # Load tools configuration
     cfg.load("flags eigen bullet urdfdom assimp pinocchio", tooldir="waf_tools")

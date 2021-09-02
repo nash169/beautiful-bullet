@@ -8,6 +8,13 @@
 
 #include <control_lib/controllers/Feedback.hpp>
 
+#include <CommonInterfaces/CommonGUIHelperInterface.h>
+#include <ExampleBrowser/OpenGLGuiHelper.h>
+#include <Importers/ImportURDFDemo/BulletUrdfImporter.h>
+#include <Importers/ImportURDFDemo/MyMultiBodyCreator.h>
+#include <Importers/ImportURDFDemo/URDF2Bullet.h>
+#include <OpenGLWindow/SimpleOpenGL3App.h>
+
 using namespace beautiful_bullet;
 using namespace control_lib;
 
@@ -26,15 +33,20 @@ public:
         _controller = std::make_shared<controllers::Feedback>(ControlSpace::LINEAR, _dim, _dim, 0.01);
 
         // Define controller internal paramters
-        Eigen::MatrixXd pGains = 1 * Eigen::MatrixXd::Identity(_dim, _dim),
-                        dGains = 0.5 * Eigen::MatrixXd::Identity(_dim, _dim);
+        Eigen::MatrixXd pGains = 100 * Eigen::MatrixXd::Identity(_dim, _dim),
+                        dGains = 20 * Eigen::MatrixXd::Identity(_dim, _dim);
+
+        pGains(5, 5) = 10;
+        pGains(6, 6) = 5;
+        dGains(5, 5) = 2;
+        dGains(6, 6) = 1;
 
         _controller->setGains("p", pGains);
         _controller->setGains("d", dGains);
 
         // Set reference
         Eigen::VectorXd target = Eigen::VectorXd::Zero(2 * _dim);
-        target.head(_dim) << 0., 0.2, 0.4, 0.3, 0.1, 0.5, 0.;
+        target.head(_dim) << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
         _controller->setReference(target);
     }
 
@@ -70,7 +82,7 @@ int main(int argc, char const* argv[])
 
     // Set agents state
     Eigen::VectorXd state(7);
-    state << 0, 0.2, 0, 0, 0, 0, 0;
+    state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
     iiwaBullet.setState(state);
 
     // Add controllers
