@@ -50,7 +50,7 @@ namespace beautiful_bullet {
         // No copy constructor (check explicit and default)
         // Agent(const Agent&) = delete;
 
-        // // Destroyer
+        // // Destroyer (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
         // ~Agent()
         // {
         //     for (auto& controller : _controllers)
@@ -68,6 +68,14 @@ namespace beautiful_bullet {
 
         /* Get Bullet loader */
         std::shared_ptr<utils::BulletLoader> loader() { return _loader; }
+
+        /* Set multibody */ // (remember to init state here)
+        Agent& setBody(btMultiBody* body)
+        {
+            _body = body;
+
+            return *this;
+        };
 
         /* Set agent (base) pose */
         Agent& setPose(const double& x, const double& y, const double& z)
@@ -158,7 +166,7 @@ namespace beautiful_bullet {
         // Root link inertia frame
         btTransform rootFrame;
 
-        // Controllers
+        // Controllers (for now shared because of issues in moving the agent object)
         std::vector<std::shared_ptr<Control>> _controllers;
 
         // Clip force
