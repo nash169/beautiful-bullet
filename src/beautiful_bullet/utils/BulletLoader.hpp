@@ -105,8 +105,14 @@ namespace beautiful_bullet {
                 }
 
                 // Allocate MultiBody
-                // std::cout << "Num links: " << numLinks << std::endl;
-                btMultiBody* multibody = new btMultiBody(numLinks, mass, inertiaDiag, mass == 0, false);
+                bool canSleep = (_flags & CUF_ENABLE_SLEEPING) != 0;
+                btMultiBody* multibody = new btMultiBody(numLinks, mass, inertiaDiag, mass == 0, canSleep);
+
+                if (_flags & CUF_GLOBAL_VELOCITIES_MB)
+                    multibody->useGlobalVelocities(true);
+
+                // if (_flags & CUF_USE_MJCF)
+                // 	multibody->setBaseWorldTransform(linkTransformInWorldSpace);
 
                 // Recursively create the nodes
                 if (!createMultiBodyRecursive(multibody, root)) {
@@ -134,17 +140,17 @@ namespace beautiful_bullet {
                 std::cout << node->name << std::endl;
                 std::cout << "Setting link: " << index << " Parent link: " << parentIndex << std::endl;
 
+                // Create collision shape
+                std::cout << "Creating node shape..." << std::endl;
+                if (!createNodeShapes(multibody, node, index)) {
+                    return false;
+                }
+
                 // If not base link create connection
                 if (index >= 0) {
                     std::cout << "Creating connection..." << std::endl;
                     if (!createJointNodeConnection(multibody, node, index, parentIndex))
                         return false;
-                }
-
-                // Create collision shape
-                std::cout << "Creating node shape..." << std::endl;
-                if (!createNodeShapes(multibody, node, index)) {
-                    return false;
                 }
 
                 // Recursively create the nodes
@@ -169,7 +175,22 @@ namespace beautiful_bullet {
                             parentFrameInertial = inertiaFrame(node->getParent().get());
 
                 // Get diagonalized inertia matrix
-                btVector3 inertiaDiag = inertiaDiagonal(node);
+                btVector3 inertiaDiag(0, 0, 0);
+                if (mass) {
+                    if (_flags & CUF_USE_URDF_INERTIA) {
+                        // Calculate diagonalized inertia
+                        inertiaDiag = inertiaDiagonal(node);
+                    }
+                    else {
+                        // Get diagonalized inertia from collision shapes
+                        multibody->getLinkCollider(index)->getCollisionShape()->calculateLocalInertia(mass, inertiaDiag);
+
+                        // Assert nan values
+                        btAssert(inertiaDiag[0] < 1e10);
+                        btAssert(inertiaDiag[1] < 1e10);
+                        btAssert(inertiaDiag[2] < 1e10);
+                    }
+                }
 
                 // Transformation from parent to child
                 btTransform parentToJoint = jointFrame(joint);
@@ -263,9 +284,9 @@ namespace beautiful_bullet {
                 if (compoundShape->getNumChildShapes() == 1 && compoundShape->getChildTransform(0) == btTransform::getIdentity())
                     collisionShape = compoundShape->getChildShape(0);
 
-                // Set local inertial collision shape
-                btVector3 inertiaDiag = inertiaDiagonal(node);
-                collisionShape->calculateLocalInertia(node->inertial->mass, inertiaDiag);
+                // // Set local inertial collision shape
+                // btVector3 inertiaDiag = inertiaDiagonal(node);
+                // collisionShape->calculateLocalInertia(node->inertial->mass, inertiaDiag);
 
                 // Create multibody link collider
                 btMultiBodyLinkCollider* collider = new btMultiBodyLinkCollider(multibody, index);
@@ -284,6 +305,12 @@ namespace beautiful_bullet {
 
                 // Set world transformation
                 collider->setWorldTransform(worldTranformation);
+
+                // Set contact friction (check here)
+                collider->setFriction(0.5);
+
+                // Deactivate collision
+                // collider->setCollisionFlags(collider->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
 
                 // Set collider in the multibody
                 if (index >= 0) {
