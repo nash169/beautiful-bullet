@@ -58,7 +58,7 @@ namespace beautiful_bullet {
 
     class Simulator {
     public:
-        Simulator() : _timeStep(1e-3)
+        Simulator() : _timeStep(1e-3), _ground(false)
         {
             // collision configuration contains default setup for memory, collision setup
             _collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -145,6 +145,8 @@ namespace beautiful_bullet {
                 .setFriction(0.5)
                 .setPose(Eigen::Vector3d(0, 0, -0.5));
 
+            _ground = true;
+
             return addObjects(Object("box", params));
         }
 
@@ -160,6 +162,19 @@ namespace beautiful_bullet {
 
             // Add collision shape
             _collisionShapes.push_back(_objects.back().body()->getCollisionShape());
+
+            // Check if the object collides with the ground (if present) and move it if necessary
+            // Maybe in the future check for the collisions in all the axis
+            // Not correct yet without considering the shape of the object
+            // if (_ground) {
+            //     // ground assumed to be the first object (maybe store the index of the ground)
+            //     double dist = _objects.back().body()->getCenterOfMassPosition().z() - _objects[0].body()->getCenterOfMassPosition().z();
+
+            //     if (dist < 0)
+            //         _objects.back().setPose(_objects.back().body()->getCenterOfMassPosition().x(),
+            //             _objects.back().body()->getCenterOfMassPosition().y(),
+            //             _objects.back().body()->getCenterOfMassPosition().z() + dist);
+            // }
 
             if constexpr (sizeof...(args) > 0)
                 addObjects(args...);
@@ -268,6 +283,9 @@ namespace beautiful_bullet {
         /* Simulation params */
         size_t _clock;
         double _timeStep;
+
+        /* Ground */
+        bool _ground;
 
         /* Objects */
         std::vector<Object> _objects;

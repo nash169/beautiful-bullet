@@ -51,21 +51,48 @@ namespace beautiful_bullet {
 
                 // Add objects to graphics
                 for (auto& object : simulator.objects()) {
-                    if (object.type() == ObjectType::BOX) {
-                        btTransform pose;
-                        pose.setIdentity();
-                        pose.setOrigin(object.body()->getCenterOfMassPosition());
-                        pose.setRotation(object.body()->getOrientation());
+                    // Object pose
+                    btTransform pose;
+                    pose.setIdentity();
+                    pose.setOrigin(object.body()->getCenterOfMassPosition());
+                    pose.setRotation(object.body()->getOrientation());
 
-                        // Override motion state
+                    if (object.type() == ObjectType::BOX) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cube")
                                 .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(object.body()->getCollisionShape())->getHalfExtentsWithMargin())))
                                 .setColor(getColor(object.color()))
                                 .setTransformation(Matrix4(pose))};
 
+                        // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
+                    else if (object.type() == ObjectType::SPHERE) {
+                        // std::static_pointer_cast for smart pointer
+                        // std::cout << "SPHERE: " << static_cast<SphereParams*>(object.params())->radius << std::endl;
+                        std::cout << "SPHERE: " << std::static_pointer_cast<SphereParams>(object.params())->radius << std::endl;
+                        // std::cout << "SPHERE: " << object.params()->radius << std::endl;
+
+                        auto motionState = new BulletIntegration::MotionState{
+                            _app->addPrimitive("sphere")
+                                // .addPriorTransformation(
+                                //     Matrix4::scaling(
+                                //         Vector3(
+                                //             static_cast<btSphereShape*>(object.body()->getCollisionShape())->getRadius(),
+                                //             static_cast<btSphereShape*>(object.body()->getCollisionShape())->getRadius(),
+                                //             static_cast<btSphereShape*>(object.body()->getCollisionShape())->getRadius())))
+                                .setColor(getColor(object.color()))
+                                .setTransformation(Matrix4(pose))};
+
+                        // Override motion state
+                        object.body()->setMotionState(&motionState->btMotionState());
+                    }
+                    else if (object.type() == ObjectType::CYLINDER) {
+                    }
+                    else if (object.type() == ObjectType::CAPSULE) {
+                    }
+                    else
+                        std::cerr << "Shape not found." << std::endl;
                 }
 
                 // Add agents to graphics

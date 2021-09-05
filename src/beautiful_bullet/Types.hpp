@@ -13,7 +13,8 @@ namespace beautiful_bullet {
         SPHERE = 1 << 0,
         CAPSULE = 1 << 1,
         CYLINDER = 1 << 2,
-        BOX = 1 << 3
+        BOX = 1 << 3,
+        RIGIDBODY = SPHERE | CAPSULE | CYLINDER | BOX
     };
 
     struct ObjectParams {
@@ -62,6 +63,21 @@ namespace beautiful_bullet {
         std::string color;
     };
 
+    struct BoxParams : public ObjectParams {
+        BoxParams() : ObjectParams(), size(btVector3(1, 1, 1))
+        {
+        }
+
+        BoxParams& setSize(const double& x, const double& y, const double& z)
+        {
+            this->size = btVector3(x, y, z);
+            return *this;
+        }
+
+        // Size
+        btVector3 size;
+    };
+
     struct SphereParams : public ObjectParams {
         SphereParams() : ObjectParams(), radius(1)
         {
@@ -77,19 +93,52 @@ namespace beautiful_bullet {
         btScalar radius;
     };
 
-    struct BoxParams : public ObjectParams {
-        BoxParams() : ObjectParams(), size(btVector3(1, 1, 1))
+    struct CylinderParams : public ObjectParams {
+        CylinderParams() : ObjectParams(), radius1(1), radius2(1), height(1)
         {
         }
 
-        BoxParams& setSize(const double& x, const double& y, const double& z)
+        CylinderParams& setRadius1(const double& r1)
         {
-            this->size = btVector3(x, y, z);
+            this->radius1 = r1;
+            return *this;
+        }
+
+        CylinderParams& setRadius2(const double& r2)
+        {
+            this->radius2 = r2;
+            return *this;
+        }
+
+        CylinderParams& setHeight(const double& h)
+        {
+            this->height = h;
+            return *this;
+        }
+
+        // Params
+        btScalar radius1, radius2, height;
+    };
+
+    struct CapsuleParams : public ObjectParams {
+        CapsuleParams() : ObjectParams(), radius(1), height(1)
+        {
+        }
+
+        CapsuleParams& setRadius(const double& r)
+        {
+            this->radius = r;
+            return *this;
+        }
+
+        CapsuleParams& setHeight(const double& h)
+        {
+            this->height = h;
             return *this;
         }
 
         // Size
-        btVector3 size;
+        btScalar radius, height;
     };
 } // namespace beautiful_bullet
 

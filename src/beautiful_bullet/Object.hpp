@@ -20,23 +20,71 @@ namespace beautiful_bullet {
 
                 /* Set box color */
                 _color = params.color; // memorize only for graphics (not very clean)
+                _params = std::make_shared<ObjectParams>(params);
+                // _params = new ObjectParams(params);
 
                 /* Create box shape */
-                btBoxShape* box_shape = new btBoxShape(static_cast<const BoxParams&>(params).size);
+                btBoxShape* boxShape = new btBoxShape(static_cast<const BoxParams&>(params).size);
 
                 /* Create box rigid body */
-                _body = createRigidBody(params.mass, params.transform, box_shape);
+                _body = createRigidBody(params.mass, params.transform, boxShape);
 
                 // Set friction
                 _body->setFriction(params.friction);
             }
-            else if (!shape.compare("sphere")) {
-                /* Set sphere type */
-                _type = ObjectType::SPHERE;
-            }
             else {
-                std::cerr << "Shape not available." << std::endl;
-                return;
+                btCollisionShape* childShape;
+
+                if (!shape.compare("sphere")) {
+                    /* Set sphere type */
+                    _type = ObjectType::SPHERE;
+
+                    // _params = new SphereParams(static_cast<const SphereParams&>(params));
+                    _params = std::make_shared<SphereParams>(static_cast<const SphereParams&>(params));
+
+                    std::cout << "Hello: " << static_cast<const SphereParams&>(params).radius << std::endl;
+
+                    /* Create box shape */
+                    childShape = new btSphereShape(static_cast<const SphereParams&>(params).radius);
+                }
+                else if (!shape.compare("cylinder")) {
+                    /* Set cylinder type */
+                    _type = ObjectType::CYLINDER;
+
+                    /* Create box shape */
+                    btVector3 halfExtents(static_cast<const CylinderParams&>(params).radius1, static_cast<const CylinderParams&>(params).radius2, static_cast<const CylinderParams&>(params).height);
+                    childShape = new btCylinderShape(halfExtents);
+                }
+                else if (!shape.compare("capsule")) {
+                    /* Set cylinder type */
+                    _type = ObjectType::CAPSULE;
+
+                    /* Create box shape */
+                    childShape = new btCapsuleShape(static_cast<const CapsuleParams&>(params).radius, static_cast<const CapsuleParams&>(params).height);
+                }
+                else {
+                    std::cerr << "Shape not available." << std::endl;
+                    return;
+                }
+
+                /* Set box color */
+                _color = params.color;
+                // _params = std::make_shared<ObjectParams>(params);
+
+                /* Create compound shape */
+                btCompoundShape* colShape = new btCompoundShape();
+                colShape->addChildShape(btTransform::getIdentity(), childShape);
+
+                /* Dynamic properties */
+                btVector3 localInertia(0, 0, 0);
+                if (params.mass)
+                    colShape->calculateLocalInertia(params.mass, localInertia);
+
+                /* Add rigid body */
+                _body = createRigidBody(params.mass, params.transform, colShape);
+
+                // Set friction
+                _body->setFriction(params.friction);
             }
         }
 
@@ -51,26 +99,51 @@ namespace beautiful_bullet {
         //         delete controller;
         // }
 
-        // Get type
+        /* Get object params */
+        std::shared_ptr<ObjectParams> params() { return _params; }
+        // ObjectParams* params() { return _params; }
+
+        /* Get type */
         const ObjectType& type() const { return _type; }
 
-        // Get type
+        /* Get color */
         const std::string& color() const { return _color; }
 
-        // Get body pointer
+        /* Get body pointer */
         btRigidBody* body() { return _body; }
 
-        // // Add controllers
-        // template <typename... Args>
-        // Object& addControllers(Control* controller, Args... args)
-        // {
-        //     _controllers.push_back(controller);
+        /* Set pose */
+        Object& setPose(const double& x, const double& y, const double& z)
+        {
+            btTransform transformation;
+            transformation.setIdentity();
+            transformation.setOrigin(btVector3(x, y, z));
+            _body->setCenterOfMassTransform(transformation);
 
-        //     if constexpr (sizeof...(args) > 0)
-        //         addControllers(args...);
+            return *this;
+        }
 
-        //     return *this;
-        // }
+        /* Set Orientation */
+        Object& setOrientation() // here decide what to pass
+        {
+            return *this;
+        }
+
+        /* Add controllers */
+        template <typename... Args>
+        Object& addControllers(std::shared_ptr<Control> controller, Args... args)
+        {
+            // Add controller
+            _controllers.push_back(controller);
+
+            // Init controller
+            _controllers.back()->init();
+
+            if constexpr (sizeof...(args) > 0)
+                addControllers(args...);
+
+            return *this;
+        }
 
         // Update model
         void update() {}
@@ -85,8 +158,15 @@ namespace beautiful_bullet {
         // Object color
         std::string _color;
 
-        // // Controllers
-        // std::vector<Control*> _controllers;
+        // Controllers (for now shared because of issues in moving the agent object)
+        std::vector<std::shared_ptr<Control>> _controllers;
+
+        // Object params (still shared for problems in moving the object with unique_ptr)
+        // Pointer in order to avoid object slicing
+        // https://stackoverflow.com/questions/8777724/store-derived-class-objects-in-base-class-variables
+        // https://stackoverflow.com/questions/1541031/is-it-possible-for-slicing-to-occur-with-smart-pointers
+        std::shared_ptr<ObjectParams> _params;
+        // ObjectParams* _params;
 
         // Create Rigid Body
         btRigidBody* createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)
