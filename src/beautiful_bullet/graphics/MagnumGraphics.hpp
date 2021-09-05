@@ -68,19 +68,14 @@ namespace beautiful_bullet {
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
                     else if (object.type() == ObjectType::SPHERE) {
-                        // std::static_pointer_cast for smart pointer
-                        // std::cout << "SPHERE: " << static_cast<SphereParams*>(object.params())->radius << std::endl;
-                        std::cout << "SPHERE: " << std::static_pointer_cast<SphereParams>(object.params())->radius << std::endl;
-                        // std::cout << "SPHERE: " << object.params()->radius << std::endl;
-
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("sphere")
-                                // .addPriorTransformation(
-                                //     Matrix4::scaling(
-                                //         Vector3(
-                                //             static_cast<btSphereShape*>(object.body()->getCollisionShape())->getRadius(),
-                                //             static_cast<btSphereShape*>(object.body()->getCollisionShape())->getRadius(),
-                                //             static_cast<btSphereShape*>(object.body()->getCollisionShape())->getRadius())))
+                                .addPriorTransformation(
+                                    Matrix4::scaling(
+                                        Vector3(
+                                            std::static_pointer_cast<SphereParams>(object.params())->radius,
+                                            std::static_pointer_cast<SphereParams>(object.params())->radius,
+                                            std::static_pointer_cast<SphereParams>(object.params())->radius)))
                                 .setColor(getColor(object.color()))
                                 .setTransformation(Matrix4(pose))};
 

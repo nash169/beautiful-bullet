@@ -20,8 +20,9 @@ namespace beautiful_bullet {
 
                 /* Set box color */
                 _color = params.color; // memorize only for graphics (not very clean)
-                _params = std::make_shared<ObjectParams>(params);
-                // _params = new ObjectParams(params);
+
+                /* Set params */
+                _params = std::make_shared<BoxParams>(static_cast<const BoxParams&>(params));
 
                 /* Create box shape */
                 btBoxShape* boxShape = new btBoxShape(static_cast<const BoxParams&>(params).size);
@@ -39,10 +40,8 @@ namespace beautiful_bullet {
                     /* Set sphere type */
                     _type = ObjectType::SPHERE;
 
-                    // _params = new SphereParams(static_cast<const SphereParams&>(params));
+                    /* Set params */
                     _params = std::make_shared<SphereParams>(static_cast<const SphereParams&>(params));
-
-                    std::cout << "Hello: " << static_cast<const SphereParams&>(params).radius << std::endl;
 
                     /* Create box shape */
                     childShape = new btSphereShape(static_cast<const SphereParams&>(params).radius);
@@ -51,6 +50,9 @@ namespace beautiful_bullet {
                     /* Set cylinder type */
                     _type = ObjectType::CYLINDER;
 
+                    /* Set params */
+                    _params = std::make_shared<CylinderParams>(static_cast<const CylinderParams&>(params));
+
                     /* Create box shape */
                     btVector3 halfExtents(static_cast<const CylinderParams&>(params).radius1, static_cast<const CylinderParams&>(params).radius2, static_cast<const CylinderParams&>(params).height);
                     childShape = new btCylinderShape(halfExtents);
@@ -58,6 +60,9 @@ namespace beautiful_bullet {
                 else if (!shape.compare("capsule")) {
                     /* Set cylinder type */
                     _type = ObjectType::CAPSULE;
+
+                    /* Set params */
+                    _params = std::make_shared<CapsuleParams>(static_cast<const CapsuleParams&>(params));
 
                     /* Create box shape */
                     childShape = new btCapsuleShape(static_cast<const CapsuleParams&>(params).radius, static_cast<const CapsuleParams&>(params).height);
@@ -69,7 +74,6 @@ namespace beautiful_bullet {
 
                 /* Set box color */
                 _color = params.color;
-                // _params = std::make_shared<ObjectParams>(params);
 
                 /* Create compound shape */
                 btCompoundShape* colShape = new btCompoundShape();
@@ -166,7 +170,6 @@ namespace beautiful_bullet {
         // https://stackoverflow.com/questions/8777724/store-derived-class-objects-in-base-class-variables
         // https://stackoverflow.com/questions/1541031/is-it-possible-for-slicing-to-occur-with-smart-pointers
         std::shared_ptr<ObjectParams> _params;
-        // ObjectParams* _params;
 
         // Create Rigid Body
         btRigidBody* createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)

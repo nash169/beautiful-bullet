@@ -13,7 +13,7 @@
 
 // urdfdom
 #include <urdf_parser/urdf_parser.h>
-#include <urdf_world/world.h>
+// #include <urdf_world/world.h>
 
 // robot bullet
 #include "beautiful_bullet/utils/LoadFlags.hpp"

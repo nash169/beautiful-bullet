@@ -407,3 +407,4 @@ TSWLatexianTemp*
 
 waf_configure
 .DS_Store
+install/
