@@ -12,9 +12,9 @@ srcdir = "."
 blddir = "build"
 
 # Tools' name and directory
-tools = {"magnum_dynamics": "/Users/bernardo/Developments/magnum-dynamics/install",
-         "utils_cpp": "/Users/bernardo/Developments/utils-cpp/install",
-         "control_lib": "/Users/bernardo/Developments/control-lib/install"}
+tools = {"magnum_dynamics": "",
+         "utils_cpp": "",
+         "control_lib": ""}
 
 
 def options(opt):
