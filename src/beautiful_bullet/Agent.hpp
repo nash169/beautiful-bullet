@@ -10,6 +10,7 @@
 #include <LinearMath/btVector3.h>
 
 // Pinocchio
+#ifdef USE_PINOCCHIO
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
@@ -17,6 +18,7 @@
 #include <pinocchio/multibody/geometry.hpp>
 #include <pinocchio/multibody/model.hpp>
 #include <pinocchio/parsers/urdf.hpp>
+#endif
 
 #include "beautiful_bullet/Control.hpp"
 #include "beautiful_bullet/utils/BulletLoader.hpp"
@@ -33,9 +35,11 @@ namespace beautiful_bullet {
             // Get multibody
             _body = _loader->parseMultiBody(file, flags);
 
-            // Pinocchio model
+// Pinocchio model
+#ifdef USE_PINOCCHIO
             pinocchio::urdf::buildModel(file, _model);
             _data = pinocchio::Data(_model); // _model.gravity.linear(Eigen::Vector3d(0, 0, -9.81));
+#endif
 
             // Init agent internal state variable
             _q.setZero(_body->getNumDofs());
@@ -132,8 +136,10 @@ namespace beautiful_bullet {
             // Command force
             Eigen::VectorXd tau = Eigen::VectorXd::Zero(_body->getNumDofs());
 
-            // Gravity compensation
+// Gravity compensation
+#ifdef USE_PINOCCHIO
             tau += pinocchio::nonLinearEffects(_model, _data, _q, _v); // pinocchio::computeGeneralizedGravity(_model, _data, _q);
+#endif
 
             // Control
             for (auto& controller : _controllers)
@@ -156,9 +162,11 @@ namespace beautiful_bullet {
         // Bullet MultiBody Object
         btMultiBody* _body = nullptr;
 
-        // Dynamics model
+// Dynamics model
+#ifdef USE_PINOCCHIO
         pinocchio::Data _data;
         pinocchio::Model _model;
+#endif
 
         // Loader
         std::shared_ptr<utils::BulletLoader> _loader;

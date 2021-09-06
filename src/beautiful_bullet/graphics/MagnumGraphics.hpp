@@ -61,7 +61,7 @@ namespace beautiful_bullet {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cube")
                                 .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(object.body()->getCollisionShape())->getHalfExtentsWithMargin())))
-                                .setColor(getColor(object.color()))
+                                .setColor(getColor(object.params()->color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
@@ -76,13 +76,26 @@ namespace beautiful_bullet {
                                             std::static_pointer_cast<SphereParams>(object.params())->radius,
                                             std::static_pointer_cast<SphereParams>(object.params())->radius,
                                             std::static_pointer_cast<SphereParams>(object.params())->radius)))
-                                .setColor(getColor(object.color()))
+                                .setColor(getColor(object.params()->color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
                     else if (object.type() == ObjectType::CYLINDER) {
+                        auto motionState = new BulletIntegration::MotionState{
+                            _app->addPrimitive("cylinder")
+                                .addPriorTransformation(
+                                    Matrix4::scaling(
+                                        Vector3(
+                                            std::static_pointer_cast<CylinderParams>(object.params())->radius1,
+                                            std::static_pointer_cast<CylinderParams>(object.params())->height,
+                                            std::static_pointer_cast<CylinderParams>(object.params())->radius2)))
+                                .setColor(getColor(object.params()->color))
+                                .setTransformation(Matrix4(pose))};
+
+                        // Override motion state
+                        object.body()->setMotionState(&motionState->btMotionState());
                     }
                     else if (object.type() == ObjectType::CAPSULE) {
                     }

@@ -21,12 +21,12 @@ int main(int argc, char** argv)
     // Add ground
     simulator.addGround();
 
-    // Create object
-    BoxParams params1, params2;
-    params1.setSize(0.5, 0.5, 0.5) // half sides
+    // Objects' params
+    BoxParams boxParams;
+    boxParams.setSize(0.5, 0.5, 0.5) // half sides
         .setMass(0.1)
         .setFriction(0.5)
-        .setPose(Eigen::Vector3d(0, 2, 10))
+        .setPose(Eigen::Vector3d(0, 2, 2))
         .setColor("red");
 
     SphereParams paramsSphere;
@@ -36,14 +36,31 @@ int main(int argc, char** argv)
         .setPose(Eigen::Vector3d(0, -2, 2))
         .setColor("green");
 
-    // params2 = params1;
-    // params2.setPose(Eigen::Vector3d(0, -2, 0.5))
-    //     .setColor("green");
+    CylinderParams paramsCylinder;
+    paramsCylinder.setRadius1(0.5)
+        .setRadius2(0.5)
+        .setHeight(0.5)
+        .setMass(0.1)
+        .setFriction(0.5)
+        .setPose(Eigen::Vector3d(0, 0, 3))
+        .setColor("blue");
 
-    Object cube("box", params1), sphere("sphere", paramsSphere);
+    CapsuleParams paramsCapsule;
+    paramsCapsule.setRadius(0.5)
+        .setHeight(0.5)
+        .setMass(0.1)
+        .setFriction(0.5)
+        .setPose(Eigen::Vector3d(0, 0, 3))
+        .setColor("yellow");
+
+    // Create objects
+    Object cube("box", boxParams),
+        sphere("sphere", paramsSphere),
+        cylinder("cylinder", paramsCylinder),
+        capsule("capsule", paramsCapsule);
 
     // Add object to simulator
-    simulator.addObjects(cube, sphere);
+    simulator.addObjects(cube, sphere, cylinder);
 
     // Run simulation
     simulator.run();

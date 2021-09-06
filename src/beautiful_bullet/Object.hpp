@@ -18,9 +18,6 @@ namespace beautiful_bullet {
                 /* Set box type */
                 _type = ObjectType::BOX;
 
-                /* Set box color */
-                _color = params.color; // memorize only for graphics (not very clean)
-
                 /* Set params */
                 _params = std::make_shared<BoxParams>(static_cast<const BoxParams&>(params));
 
@@ -72,9 +69,6 @@ namespace beautiful_bullet {
                     return;
                 }
 
-                /* Set box color */
-                _color = params.color;
-
                 /* Create compound shape */
                 btCompoundShape* colShape = new btCompoundShape();
                 colShape->addChildShape(btTransform::getIdentity(), childShape);
@@ -109,9 +103,6 @@ namespace beautiful_bullet {
 
         /* Get type */
         const ObjectType& type() const { return _type; }
-
-        /* Get color */
-        const std::string& color() const { return _color; }
 
         /* Get body pointer */
         btRigidBody* body() { return _body; }
@@ -159,17 +150,14 @@ namespace beautiful_bullet {
         // Object type
         ObjectType _type;
 
-        // Object color
-        std::string _color;
-
-        // Controllers (for now shared because of issues in moving the agent object)
-        std::vector<std::shared_ptr<Control>> _controllers;
-
         // Object params (still shared for problems in moving the object with unique_ptr)
         // Pointer in order to avoid object slicing
         // https://stackoverflow.com/questions/8777724/store-derived-class-objects-in-base-class-variables
         // https://stackoverflow.com/questions/1541031/is-it-possible-for-slicing-to-occur-with-smart-pointers
         std::shared_ptr<ObjectParams> _params;
+
+        // Controllers (for now shared because of issues in moving the agent object)
+        std::vector<std::shared_ptr<Control>> _controllers;
 
         // Create Rigid Body
         btRigidBody* createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)
