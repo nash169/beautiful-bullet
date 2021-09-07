@@ -94,6 +94,18 @@ namespace beautiful_bullet {
             return *this;
         }
 
+        Agent& setOrientation(const double& roll, const double& pitch, const double& yaw)
+        {
+            _body->setWorldToBaseRot(btQuaternion(yaw, pitch, roll));
+
+            btAlignedObjectArray<btQuaternion> scratch_q;
+            btAlignedObjectArray<btVector3> scratch_m;
+            _body->forwardKinematics(scratch_q, scratch_m);
+            _body->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+
+            return *this;
+        }
+
         /* Set agent state */
         Agent& setState(const Eigen::VectorXd& q)
         {
