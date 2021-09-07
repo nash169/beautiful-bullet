@@ -10,18 +10,20 @@ def options(opt):
     opt.load("eigen bullet", tooldir="waf_tools")
 
     # Options
-    opt.add_option(
-        "--beautifulbullet-path", type="string", help="path to beautiful-bullet", dest="beautifulbullet_path"
-    )
+    opt.add_option("--bb-path", type="string",
+                   help="Path to Beautiful Bullet.", dest="bb_path")
+
+    opt.add_option("--bb-pinocchio", action="store_true",
+                   help="Activate Pinocchio support.", dest="bb_pinocchio")
 
 
 @conf
 def check_beautifulbullet(ctx):
     # Set the search path
-    if ctx.options.beautifulbullet_path is None:
+    if ctx.options.bb_path is None:
         path_check = ["/usr/local", "/usr"]
     else:
-        path_check = [ctx.options.beautifulbullet_path]
+        path_check = [ctx.options.bb_path]
 
     # beautiful-bullet includes
     check_include(ctx, "BEAUTIFULBULLET", ["beautiful_bullet"], [

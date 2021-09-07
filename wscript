@@ -30,13 +30,14 @@ def options(opt):
     opt.load("flags bullet urdfdom assimp pinocchio", tooldir="waf_tools")
 
     # Add options
-    opt.add_option("--shared",
-                   action="store_true",
-                   help="build shared library")
+    opt.add_option("--shared", action="store_true",
+                   help="Build shared library.")
 
-    opt.add_option("--static",
-                   action="store_true",
-                   help="build static library")
+    opt.add_option("--static", action="store_true",
+                   help="Build static library.")
+
+    opt.add_option("--with-pinocchio", action="store_true",
+                   help="Compile Beautiful Bullet with Pinocchio support.", dest="with_pinocchio")
 
 
 def configure(cfg):
@@ -47,7 +48,13 @@ def configure(cfg):
     cfg.load("compiler_cxx clang_compilation_database")
 
     # Define require libraries
-    cfg.get_env()["requires"] += ["EIGEN", "BULLET"]
+    cfg.get_env()["requires"] += ["EIGEN", "BULLET", "ASSIMP",
+                                  "URDFDOM"]  # MAGNUMDYNAMICS, UTILSCPP, CONTROL
+
+    # Optionally add Pinocchio to the required libraries
+    if cfg.options.with_pinocchio:
+        cfg.get_env()["requires"] += ["PINOCCHIO"]
+        cfg.env["DEFINES"] += ["USE_PINOCCHIO"]
 
     # Load personal tools configurations
     for key in tools:
