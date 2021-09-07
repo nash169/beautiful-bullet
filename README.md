@@ -8,6 +8,7 @@ Robotics simulator based on Bullet Physics Engine
 - Add visualization collision objects (implement imgui in magnum-dynamics)
 - Remove debug messages
 - Add operation space control
+- Add flags when loading multibody collision shapes
 
 ![alt text](media/bullet_logo.png?raw=true)
 
