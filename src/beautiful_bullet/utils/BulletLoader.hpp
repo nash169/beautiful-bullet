@@ -355,18 +355,56 @@ namespace beautiful_bullet {
 
                 // Check shape type
                 switch (shape->geometry->type) {
-                case urdf::Geometry::SPHERE:
-                    std::cout << "Sphere" << std::endl;
-                    break;
+                case urdf::Geometry::SPHERE: {
+                    urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(shape->geometry.get());
 
-                case urdf::Geometry::BOX:
-                    std::cout << "Box" << std::endl;
-                    break;
+                    btSphereShape* sphereShape = new btSphereShape(sphere->radius);
+                    collisionShape = sphereShape;
+                    collisionShape->setMargin(_collisionMargin);
 
-                case urdf::Geometry::CYLINDER:
-                    std::cout << "Cylinder" << std::endl;
                     break;
+                }
+                case urdf::Geometry::BOX: {
+                    urdf::Box* box = dynamic_cast<urdf::Box*>(shape->geometry.get());
 
+                    btBoxShape* boxShape = new btBoxShape(0.5 * btVector3(box->dim.x, box->dim.y, box->dim.z));
+
+                    if (_flags & CUF_INITIALIZE_SAT_FEATURES)
+                        boxShape->initializePolyhedralFeatures();
+
+                    collisionShape = boxShape;
+                    collisionShape->setMargin(_collisionMargin);
+                    break;
+                }
+                case urdf::Geometry::CYLINDER: {
+                    urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(shape->geometry.get());
+
+                    if (_flags & CUF_USE_IMPLICIT_CYLINDER) {
+                        btCylinderShapeZ* cylinderShape = new btCylinderShapeZ(btVector3(cylinder->radius, cylinder->radius, 0.5 * cylinder->length));
+                        collisionShape = cylinderShape;
+                        collisionShape->setMargin(_collisionMargin);
+                    }
+                    else {
+                        btAlignedObjectArray<btVector3> vertices;
+                        int numSteps = 32;
+                        for (int i = 0; i < numSteps; i++) {
+                            btVector3 vert(cylinder->radius * btSin(SIMD_2_PI * (float(i) / numSteps)), cylinder->radius * btCos(SIMD_2_PI * (float(i) / numSteps)), 0.5 * cylinder->length);
+                            vertices.push_back(vert);
+                            vert[2] = -(0.5 * cylinder->length);
+                            vertices.push_back(vert);
+                        }
+                        btConvexHullShape* cylinderShape = new btConvexHullShape(&vertices[0].x(), vertices.size(), sizeof(btVector3));
+                        cylinderShape->setMargin(_collisionMargin);
+                        cylinderShape->recalcLocalAabb();
+
+                        if (_flags & CUF_INITIALIZE_SAT_FEATURES)
+                            cylinderShape->initializePolyhedralFeatures();
+
+                        cylinderShape->optimizeConvexHull();
+                        collisionShape = cylinderShape;
+                    }
+                    break;
+                }
                 case urdf::Geometry::MESH: {
                     urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(shape->geometry.get());
 
@@ -382,9 +420,10 @@ namespace beautiful_bullet {
 
                     break;
                 }
-
-                default:
+                default: {
+                    std::cerr << "Shape not found." << std::endl;
                     return nullptr;
+                }
                 }
 
                 return collisionShape;
