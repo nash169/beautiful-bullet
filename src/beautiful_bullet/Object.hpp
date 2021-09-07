@@ -108,10 +108,9 @@ namespace beautiful_bullet {
         btRigidBody* body() { return _body; }
 
         /* Set pose */
-        Object& setPose(const double& x, const double& y, const double& z)
+        Object& setPosition(const double& x, const double& y, const double& z)
         {
-            btTransform transformation;
-            transformation.setIdentity();
+            btTransform transformation = _body->getCenterOfMassTransform();
             transformation.setOrigin(btVector3(x, y, z));
             _body->setCenterOfMassTransform(transformation);
 
@@ -119,8 +118,17 @@ namespace beautiful_bullet {
         }
 
         /* Set Orientation */
-        Object& setOrientation() // here decide what to pass
+        Object& setOrientation(const double& roll, const double& pitch, const double& yaw) // here decide what to pass
         {
+            // Get quaternion from Eigen
+            // Eigen::Quaterniond q = Eigen::AngleAxisf(roll, Eigen::Vector3d::UnitX())
+            //     * Eigen::AngleAxisf(pitch, Eigen::Vector3d::UnitY())
+            //     * Eigen::AngleAxisf(yaw, Eigen::Vector3d::UnitZ());
+
+            btTransform transformation = _body->getCenterOfMassTransform();
+            transformation.setRotation(btQuaternion(yaw, pitch, roll));
+            _body->setCenterOfMassTransform(transformation);
+
             return *this;
         }
 

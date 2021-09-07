@@ -63,13 +63,12 @@ int main(int argc, char** argv)
     params.setRadius(0.2)
         .setMass(0.0)
         .setFriction(0.5)
-        .setPose(Eigen::Vector3d(0.5, 0, 1))
         .setColor("grey");
 
     Object sphere("sphere", params);
 
     // Add object to simulator
-    simulator.addObjects(sphere);
+    simulator.addObjects(sphere.setPosition(0.5, 0, 1));
 
     // Create agent
     Agent franka("models/franka/urdf/panda.urdf");

@@ -77,8 +77,8 @@ int main(int argc, char const* argv[])
     Agent iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf");
 
     // Set agents pose
-    iiwaBullet.setPose(0, -1, 0);
-    iiwa.setPose(0, 1, 0);
+    iiwaBullet.setPosition(0, -1, 0);
+    iiwa.setPosition(0, 1, 0);
 
     // Set agents state
     Eigen::VectorXd state(7);

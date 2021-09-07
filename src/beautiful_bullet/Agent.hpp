@@ -82,7 +82,7 @@ namespace beautiful_bullet {
         };
 
         /* Set agent (base) pose */
-        Agent& setPose(const double& x, const double& y, const double& z)
+        Agent& setPosition(const double& x, const double& y, const double& z)
         {
             _body->setBasePos(btVector3(x, y, z) + rootFrame.getOrigin());
 

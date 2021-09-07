@@ -26,25 +26,24 @@ int main(int argc, char** argv)
     params1.setSize(0.5, 0.5, 0.5)
         .setMass(0.1)
         .setFriction(0.5)
-        .setPose(Eigen::Vector3d(0, 2, 10))
         .setColor("red");
 
     params2 = params1;
-    params2.setPose(Eigen::Vector3d(0, -2, 10))
-        .setColor("green");
+    params2.setColor("green");
 
     Object cube1("box", params1), cube2("box", params2);
 
     // Add object to simulator
-    simulator.addObjects(cube1, cube2);
+    simulator.addObjects(cube1.setPosition(0, 2, 10),
+        cube2.setPosition(0, -2, 10));
 
     // Create agent
     Agent iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf"),
         franka("models/franka/urdf/panda.urdf");
 
     // Set agents pose
-    iiwaBullet.setPose(2, -2, 0);
-    iiwa.setPose(2, 2, 0);
+    iiwaBullet.setPosition(2, -2, 0);
+    iiwa.setPosition(2, 2, 0);
 
     // Set agents state
     Eigen::VectorXd state(7);

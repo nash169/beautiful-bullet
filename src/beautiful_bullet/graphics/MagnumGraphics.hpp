@@ -10,6 +10,7 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 
 #include <magnum_dynamics/MagnumApp.hpp>
+#include <magnum_dynamics/tools/helper.hpp>
 
 #include "beautiful_bullet/Simulator.hpp"
 #include "beautiful_bullet/graphics/AbstractGraphics.hpp"
@@ -17,20 +18,6 @@
 namespace beautiful_bullet {
     namespace graphics {
         using namespace magnum_dynamics;
-
-        Color4 getColor(const std::string& color)
-        {
-            if (!color.compare("red"))
-                return Color4::red();
-            else if (!color.compare("green"))
-                return Color4::green();
-            else if (!color.compare("blue"))
-                return Color4::blue();
-            else if (!color.compare("grey"))
-                return Color4(0x585858_rgbf);
-            else
-                return Color4::red();
-        }
 
         class MagnumGraphics : public AbstractGraphics {
         public:
@@ -61,7 +48,7 @@ namespace beautiful_bullet {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cube")
                                 .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(object.body()->getCollisionShape())->getHalfExtentsWithMargin())))
-                                .setColor(getColor(object.params()->color))
+                                .setColor(tools::color(object.params()->color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
@@ -76,7 +63,7 @@ namespace beautiful_bullet {
                                             std::static_pointer_cast<SphereParams>(object.params())->radius,
                                             std::static_pointer_cast<SphereParams>(object.params())->radius,
                                             std::static_pointer_cast<SphereParams>(object.params())->radius)))
-                                .setColor(getColor(object.params()->color))
+                                .setColor(tools::color(object.params()->color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
@@ -88,16 +75,29 @@ namespace beautiful_bullet {
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            std::static_pointer_cast<CylinderParams>(object.params())->radius1,
+                                            std::static_pointer_cast<CylinderParams>(object.params())->radius2,
                                             std::static_pointer_cast<CylinderParams>(object.params())->height,
-                                            std::static_pointer_cast<CylinderParams>(object.params())->radius2)))
-                                .setColor(getColor(object.params()->color))
+                                            std::static_pointer_cast<CylinderParams>(object.params())->radius1)))
+                                .setColor(tools::color(object.params()->color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
                     else if (object.type() == ObjectType::CAPSULE) {
+                        auto motionState = new BulletIntegration::MotionState{
+                            _app->addPrimitive("capsule")
+                                .addPriorTransformation(
+                                    Matrix4::scaling(
+                                        Vector3(
+                                            std::static_pointer_cast<CapsuleParams>(object.params())->radius,
+                                            std::static_pointer_cast<CapsuleParams>(object.params())->radius,
+                                            std::static_pointer_cast<CapsuleParams>(object.params())->height)))
+                                .setColor(tools::color(object.params()->color))
+                                .setTransformation(Matrix4(pose))};
+
+                        // Override motion state
+                        object.body()->setMotionState(&motionState->btMotionState());
                     }
                     else
                         std::cerr << "Shape not found." << std::endl;
