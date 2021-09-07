@@ -41,11 +41,11 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        ObjectParams& setPose(const Eigen::Vector3d& pose)
-        {
-            transform.setOrigin(btVector3(pose(0), pose(1), pose(2)));
-            return *this;
-        }
+        // ObjectParams& setPose(const Eigen::Vector3d& pose)
+        // {
+        //     transform.setOrigin(btVector3(pose(0), pose(1), pose(2)));
+        //     return *this;
+        // }
 
         ObjectParams& setRotation(const btScalar& angle, const Eigen::Vector3d& axis)
         {
