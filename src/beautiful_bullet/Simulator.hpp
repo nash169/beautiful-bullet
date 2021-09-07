@@ -106,15 +106,13 @@ namespace beautiful_bullet {
             }
             _collisionShapes.clear();
 
-            delete _world;
-
-            delete _solver;
-
-            delete _broadphase;
-
-            delete _dispatcher;
-
             delete _collisionConfiguration;
+            delete _dispatcher;
+            delete _filterCallback;
+            delete _pairCache;
+            delete _broadphase;
+            delete _solver;
+            delete _world;
         }
 
         /* Get DynamicsWorld object */
@@ -142,12 +140,12 @@ namespace beautiful_bullet {
             params
                 .setSize(4, 4, 0.5)
                 .setMass(0)
-                .setFriction(0.5)
-                .setPose(Eigen::Vector3d(0, 0, -0.5));
+                .setFriction(0.5);
+            // .setPose(Eigen::Vector3d(0, 0, -0.5));
 
             _ground = true;
 
-            return addObjects(Object("box", params));
+            return addObjects(Object("box", params).setPosition(0, 0, -0.5));
         }
 
         /* Add (rigidbody) object into the simulation */
