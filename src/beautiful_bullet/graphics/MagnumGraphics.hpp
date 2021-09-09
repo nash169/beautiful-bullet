@@ -48,7 +48,7 @@ namespace beautiful_bullet {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cube")
                                 .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(object.body()->getCollisionShape())->getHalfExtentsWithMargin())))
-                                .setColor(tools::color(object.params()->color))
+                                .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
@@ -60,10 +60,10 @@ namespace beautiful_bullet {
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            std::static_pointer_cast<SphereParams>(object.params())->radius,
-                                            std::static_pointer_cast<SphereParams>(object.params())->radius,
-                                            std::static_pointer_cast<SphereParams>(object.params())->radius)))
-                                .setColor(tools::color(object.params()->color))
+                                            static_cast<SphereParams&>(object.params()).radius,
+                                            static_cast<SphereParams&>(object.params()).radius,
+                                            static_cast<SphereParams&>(object.params()).radius)))
+                                .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
@@ -75,10 +75,10 @@ namespace beautiful_bullet {
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            std::static_pointer_cast<CylinderParams>(object.params())->radius2,
-                                            std::static_pointer_cast<CylinderParams>(object.params())->height,
-                                            std::static_pointer_cast<CylinderParams>(object.params())->radius1)))
-                                .setColor(tools::color(object.params()->color))
+                                            static_cast<CylinderParams&>(object.params()).radius2,
+                                            static_cast<CylinderParams&>(object.params()).height,
+                                            static_cast<CylinderParams&>(object.params()).radius1)))
+                                .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
@@ -90,10 +90,10 @@ namespace beautiful_bullet {
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            std::static_pointer_cast<CapsuleParams>(object.params())->radius,
-                                            std::static_pointer_cast<CapsuleParams>(object.params())->radius,
-                                            std::static_pointer_cast<CapsuleParams>(object.params())->height)))
-                                .setColor(tools::color(object.params()->color))
+                                            static_cast<CapsuleParams&>(object.params()).radius,
+                                            static_cast<CapsuleParams&>(object.params()).radius,
+                                            static_cast<CapsuleParams&>(object.params()).height)))
+                                .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
@@ -105,14 +105,14 @@ namespace beautiful_bullet {
 
                 // Add agents to graphics
                 for (auto& agent : simulator.agents()) {
-                    auto model = agent.loader()->model();
+                    auto model = agent.loader().model();
 
                     const urdf::Link* root = model->getRoot().get();
 
                     if (root->name == "world")
                         root = root->child_links[0].get();
 
-                    if (!createVisualRecursive(model.get(), root, agent.body(), agent.loader()->path()))
+                    if (!createVisualRecursive(model.get(), root, agent.body(), agent.loader().path()))
                         return false;
                 }
 

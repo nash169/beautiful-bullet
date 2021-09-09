@@ -2,7 +2,6 @@
 Robotics simulator based on Bullet Physics Engine
 
 ## ToDo
-- Delete copy constructor Agent and Object
 - Fix Franka URDF (problem with prismatic links hand)
 - Check memory allocation
 - Add visualization collision objects (implement imgui in magnum-dynamics)

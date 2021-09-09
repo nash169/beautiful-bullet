@@ -19,13 +19,13 @@ namespace beautiful_bullet {
                 _type = ObjectType::BOX;
 
                 /* Set params */
-                _params = std::make_shared<BoxParams>(static_cast<const BoxParams&>(params));
+                _params = std::make_unique<BoxParams>(static_cast<const BoxParams&>(params));
 
                 /* Create box shape */
                 btBoxShape* boxShape = new btBoxShape(static_cast<const BoxParams&>(params).size);
 
                 /* Create box rigid body */
-                _body = createRigidBody(params.mass, params.transform, boxShape);
+                _body = createRigidBody(params.mass, btTransform::getIdentity(), boxShape);
 
                 // Set friction
                 _body->setFriction(params.friction);
@@ -38,7 +38,7 @@ namespace beautiful_bullet {
                     _type = ObjectType::SPHERE;
 
                     /* Set params */
-                    _params = std::make_shared<SphereParams>(static_cast<const SphereParams&>(params));
+                    _params = std::make_unique<SphereParams>(static_cast<const SphereParams&>(params));
 
                     /* Create box shape */
                     childShape = new btSphereShape(static_cast<const SphereParams&>(params).radius);
@@ -48,7 +48,7 @@ namespace beautiful_bullet {
                     _type = ObjectType::CYLINDER;
 
                     /* Set params */
-                    _params = std::make_shared<CylinderParams>(static_cast<const CylinderParams&>(params));
+                    _params = std::make_unique<CylinderParams>(static_cast<const CylinderParams&>(params));
 
                     /* Create box shape */
                     btVector3 halfExtents(static_cast<const CylinderParams&>(params).radius1, static_cast<const CylinderParams&>(params).radius2, static_cast<const CylinderParams&>(params).height);
@@ -59,7 +59,7 @@ namespace beautiful_bullet {
                     _type = ObjectType::CAPSULE;
 
                     /* Set params */
-                    _params = std::make_shared<CapsuleParams>(static_cast<const CapsuleParams&>(params));
+                    _params = std::make_unique<CapsuleParams>(static_cast<const CapsuleParams&>(params));
 
                     /* Create box shape */
                     childShape = new btCapsuleShape(static_cast<const CapsuleParams&>(params).radius, static_cast<const CapsuleParams&>(params).height);
@@ -73,33 +73,56 @@ namespace beautiful_bullet {
                 btCompoundShape* colShape = new btCompoundShape();
                 colShape->addChildShape(btTransform::getIdentity(), childShape);
 
-                /* Dynamic properties */
-                btVector3 localInertia(0, 0, 0);
-                if (params.mass)
-                    colShape->calculateLocalInertia(params.mass, localInertia);
+                // /* Dynamic properties */
+                // btVector3 localInertia(0, 0, 0);
+                // if (params.mass)
+                //     colShape->calculateLocalInertia(params.mass, localInertia);
 
                 /* Add rigid body */
-                _body = createRigidBody(params.mass, params.transform, colShape);
+                _body = createRigidBody(params.mass, btTransform::getIdentity(), colShape);
 
                 // Set friction
                 _body->setFriction(params.friction);
             }
         }
 
+        // Default constructor
         Object() = default;
 
-        // No copy constructor (check explicit and default)
-        // Object(const Object&) = delete; // it might not work just because I'm with clang
+        // Move constructor
+        Object(Object&& other) noexcept
+        {
+            // Move RigidBody pointer
+            _body = other._body;
+            other._body = nullptr;
 
-        // ~Object()
-        // {
-        //     for (auto& controller : _controllers)
-        //         delete controller;
-        // }
+            // Move (copy) object type
+            _type = other._type;
+
+            // Move params
+            _params = std::move(other._params);
+
+            // Move controllers
+            for (auto& controller : other._controllers)
+                _controllers.push_back(std::move(controller));
+
+            // Clear other controllers
+            other._controllers.clear();
+            other._controllers.shrink_to_fit();
+        }
+
+        // No copy constructor (check explicit and default)
+        Object(const Object&) = delete; // it might not work just because I'm with clang
+
+        ~Object()
+        {
+            // Clear controllers
+            _controllers.clear();
+            _controllers.shrink_to_fit();
+        }
 
         /* Get object params */
-        std::shared_ptr<ObjectParams> params() { return _params; }
-        // ObjectParams* params() { return _params; }
+        ObjectParams& params() { return *_params.get(); }
 
         /* Get type */
         const ObjectType& type() const { return _type; }
@@ -132,12 +155,18 @@ namespace beautiful_bullet {
             return *this;
         }
 
+        // ObjectParams& setRotation(const btScalar& angle, const Eigen::Vector3d& axis)
+        // {
+        //     transform.setRotation(btQuaternion(btVector3(axis(0), axis(1), axis(2)), angle));
+        //     return *this;
+        // }
+
         /* Add controllers */
         template <typename... Args>
-        Object& addControllers(std::shared_ptr<Control> controller, Args... args)
+        Object& addControllers(std::unique_ptr<Control> controller, Args... args)
         {
             // Add controller
-            _controllers.push_back(controller);
+            _controllers.push_back(std::move(controller));
 
             // Init controller
             _controllers.back()->init();
@@ -162,10 +191,10 @@ namespace beautiful_bullet {
         // Pointer in order to avoid object slicing
         // https://stackoverflow.com/questions/8777724/store-derived-class-objects-in-base-class-variables
         // https://stackoverflow.com/questions/1541031/is-it-possible-for-slicing-to-occur-with-smart-pointers
-        std::shared_ptr<ObjectParams> _params;
+        std::unique_ptr<ObjectParams> _params;
 
         // Controllers (for now shared because of issues in moving the agent object)
-        std::vector<std::shared_ptr<Control>> _controllers;
+        std::vector<std::unique_ptr<Control>> _controllers;
 
         // Create Rigid Body
         btRigidBody* createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)

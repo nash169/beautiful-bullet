@@ -30,10 +30,10 @@ namespace beautiful_bullet {
         Agent(const std::string& file, int flags = 0)
         {
             // Create loader
-            _loader = std::make_shared<utils::BulletLoader>();
+            // _loader = std::make_shared<utils::BulletLoader>();
 
             // Get multibody
-            _body = _loader->parseMultiBody(file, flags);
+            _body = _loader.parseMultiBody(file, flags);
 
 // Pinocchio model
 #ifdef USE_PINOCCHIO
@@ -46,20 +46,52 @@ namespace beautiful_bullet {
             _v.setZero(_body->getNumDofs());
 
             // Store inertia frame of the root node
-            rootFrame = _body->getBaseWorldTransform();
+            _rootFrame = _body->getBaseWorldTransform();
         }
 
         Agent() = default;
 
-        // No copy constructor (check explicit and default)
-        // Agent(const Agent&) = delete;
+        // Move constructor
+        Agent(Agent&& other) noexcept
+        {
+            // Move (copy) state
+            _q = other._q;
+            _v = other._v;
 
-        // // Destroyer (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
-        // ~Agent()
-        // {
-        //     for (auto& controller : _controllers)
-        //         delete controller;
-        // }
+            // Move RigidBody pointer
+            _body = other._body;
+            other._body = nullptr;
+
+// Move Pinocchio objects
+#ifdef USE_PINOCCHIO
+            _data = other._data;
+            _model = other._model;
+#endif
+
+            // Move loader
+            _loader = other._loader;
+
+            // Move root frame
+            _rootFrame = other._rootFrame;
+
+            // Move controllers
+            for (auto& controller : other._controllers)
+                _controllers.push_back(std::move(controller));
+
+            // Clear other controllers
+            other._controllers.clear();
+            other._controllers.shrink_to_fit();
+        }
+
+        // No copy constructor (check explicit and default)
+        Agent(const Agent&) = delete;
+
+        // Destroyer (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
+        ~Agent()
+        {
+            _controllers.clear();
+            _controllers.shrink_to_fit();
+        }
 
         /* Get multibody pointer */
         btMultiBody* body() { return _body; }
@@ -71,7 +103,8 @@ namespace beautiful_bullet {
         const Eigen::VectorXd& velocity() { return _v; }
 
         /* Get Bullet loader */
-        std::shared_ptr<utils::BulletLoader> loader() { return _loader; }
+        utils::BulletLoader& loader() { return _loader; }
+        // std::shared_ptr<utils::BulletLoader> loader() { return _loader; }
 
         /* Set multibody */ // (remember to init state here)
         Agent& setBody(btMultiBody* body)
@@ -84,7 +117,7 @@ namespace beautiful_bullet {
         /* Set agent (base) pose */
         Agent& setPosition(const double& x, const double& y, const double& z)
         {
-            _body->setBasePos(btVector3(x, y, z) + rootFrame.getOrigin());
+            _body->setBasePos(btVector3(x, y, z) + _rootFrame.getOrigin());
 
             btAlignedObjectArray<btQuaternion> scratch_q;
             btAlignedObjectArray<btVector3> scratch_m;
@@ -122,10 +155,10 @@ namespace beautiful_bullet {
 
         /* Add controllers */
         template <typename... Args>
-        Agent& addControllers(std::shared_ptr<Control> controller, Args... args)
+        Agent& addControllers(std::unique_ptr<Control> controller, Args... args)
         {
             // Add controller
-            _controllers.push_back(controller);
+            _controllers.push_back(std::move(controller));
 
             // Init controller
             _controllers.back()->init();
@@ -181,13 +214,14 @@ namespace beautiful_bullet {
 #endif
 
         // Loader
-        std::shared_ptr<utils::BulletLoader> _loader;
+        utils::BulletLoader _loader;
+        // std::shared_ptr<utils::BulletLoader> _loader;
 
         // Root link inertia frame
-        btTransform rootFrame;
+        btTransform _rootFrame;
 
         // Controllers (for now shared because of issues in moving the agent object)
-        std::vector<std::shared_ptr<Control>> _controllers;
+        std::vector<std::unique_ptr<Control>> _controllers;
 
         // Clip force
         inline void clipForce(const int& index, double& force)

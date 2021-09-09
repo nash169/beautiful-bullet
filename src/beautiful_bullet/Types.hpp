@@ -18,10 +18,7 @@ namespace beautiful_bullet {
     };
 
     struct ObjectParams {
-        ObjectParams() : mass(0), friction(0), color("grey")
-        {
-            transform.setIdentity();
-        }
+        ObjectParams() : mass(0), friction(0), color("grey") {}
 
         ObjectParams& setMass(const btScalar& mass)
         {
@@ -41,23 +38,8 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        // ObjectParams& setPose(const Eigen::Vector3d& pose)
-        // {
-        //     transform.setOrigin(btVector3(pose(0), pose(1), pose(2)));
-        //     return *this;
-        // }
-
-        ObjectParams& setRotation(const btScalar& angle, const Eigen::Vector3d& axis)
-        {
-            transform.setRotation(btQuaternion(btVector3(axis(0), axis(1), axis(2)), angle));
-            return *this;
-        }
-
         // Dynamics properties
         btScalar mass, friction;
-
-        // Frame
-        btTransform transform;
 
         // Color
         std::string color;

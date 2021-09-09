@@ -86,7 +86,7 @@ int main(int argc, char const* argv[])
     iiwaBullet.setState(state);
 
     // Add controllers
-    iiwa.addControllers(std::make_shared<ArmConfigurationControl>());
+    iiwa.addControllers(std::make_unique<ArmConfigurationControl>());
 
     // Add agent to simulator
     simulator.addAgents(iiwaBullet, iiwa);

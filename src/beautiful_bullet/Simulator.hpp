@@ -88,7 +88,25 @@ namespace beautiful_bullet {
         /* Cleanup in the reverse order of creation/initialization */
         ~Simulator()
         {
-            // remove the rigidbodies from the dynamics world and delete them
+            // Remove constaints
+            for (int i = _world->getNumConstraints() - 1; i >= 0; i--)
+                _world->removeConstraint(_world->getConstraint(i));
+
+            // Remove and delete MultiBody constraints
+            for (int i = _world->getNumMultiBodyConstraints() - 1; i >= 0; i--) {
+                btMultiBodyConstraint* mbc = _world->getMultiBodyConstraint(i);
+                _world->removeMultiBodyConstraint(mbc);
+                delete mbc;
+            }
+
+            // Remove and delete MultiBodies
+            for (int i = _world->getNumMultibodies() - 1; i >= 0; i--) {
+                btMultiBody* mb = _world->getMultiBody(i);
+                _world->removeMultiBody(mb);
+                delete mb;
+            }
+
+            // Remove and delete the rigid bodies
             for (int i = _world->getNumCollisionObjects() - 1; i >= 0; i--) {
                 btCollisionObject* obj = _world->getCollisionObjectArray()[i];
                 btRigidBody* body = btRigidBody::upcast(obj);
@@ -106,13 +124,41 @@ namespace beautiful_bullet {
             }
             _collisionShapes.clear();
 
-            delete _collisionConfiguration;
-            delete _dispatcher;
-            delete _filterCallback;
-            delete _pairCache;
-            delete _broadphase;
-            delete _solver;
+            // Clears agents
+            _agents.clear();
+            _agents.shrink_to_fit();
+
+            // Clear object
+            _objects.clear();
+            _objects.shrink_to_fit();
+
+            // Delete MultibodyDynamicsWorld
             delete _world;
+            _world = nullptr;
+
+            // Delete MultiBodyConstraintSolver
+            delete _solver;
+            _solver = nullptr;
+
+            // Delete DbvtBroadphase
+            delete _broadphase;
+            _broadphase = nullptr;
+
+            // Delete CollisionDispatcher
+            delete _dispatcher;
+            _dispatcher = nullptr;
+
+            // Delete HashedOverlappingPairCache
+            delete _pairCache;
+            _pairCache = nullptr;
+
+            // Delete OverlapFilterCallback
+            delete _filterCallback;
+            _filterCallback = nullptr;
+
+            // Delete DefaultCollisionConfiguration
+            delete _collisionConfiguration;
+            _collisionConfiguration = nullptr;
         }
 
         /* Get DynamicsWorld object */
@@ -137,20 +183,16 @@ namespace beautiful_bullet {
         {
             // Ground parameters
             BoxParams params;
-            params
-                .setSize(4, 4, 0.5)
+            params.setSize(4, 4, 0.5)
                 .setMass(0)
                 .setFriction(0.5);
-            // .setPose(Eigen::Vector3d(0, 0, -0.5));
-
-            _ground = true;
 
             return addObjects(Object("box", params).setPosition(0, 0, -0.5));
         }
 
         /* Add (rigidbody) object into the simulation */
         template <typename... Args>
-        Simulator& addObjects(const Object& object, Args... args) // move the agent
+        Simulator& addObjects(Object& object, Args&... args) // move the agent
         {
             // Move object
             _objects.push_back(std::move(object));
@@ -161,19 +203,6 @@ namespace beautiful_bullet {
             // Add collision shape
             _collisionShapes.push_back(_objects.back().body()->getCollisionShape());
 
-            // Check if the object collides with the ground (if present) and move it if necessary
-            // Maybe in the future check for the collisions in all the axis
-            // Not correct yet without considering the shape of the object
-            // if (_ground) {
-            //     // ground assumed to be the first object (maybe store the index of the ground)
-            //     double dist = _objects.back().body()->getCenterOfMassPosition().z() - _objects[0].body()->getCenterOfMassPosition().z();
-
-            //     if (dist < 0)
-            //         _objects.back().setPose(_objects.back().body()->getCenterOfMassPosition().x(),
-            //             _objects.back().body()->getCenterOfMassPosition().y(),
-            //             _objects.back().body()->getCenterOfMassPosition().z() + dist);
-            // }
-
             if constexpr (sizeof...(args) > 0)
                 addObjects(args...);
 
@@ -182,7 +211,7 @@ namespace beautiful_bullet {
 
         /* Add (multibody) agent into the simulation */
         template <typename... Args>
-        Simulator& addAgents(const Agent& agent, Args... args) // move the agent
+        Simulator& addAgents(Agent& agent, Args&... args) // move the agent
         {
             // Move agent inside simulator
             _agents.push_back(std::move(agent)); // it does not seem to be working
@@ -202,6 +231,9 @@ namespace beautiful_bullet {
                         collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
                     _world->addCollisionObject(_agents.back().body()->getLinkCollider(i), collisionFilterGroup, collisionFilterMask);
+
+                    // Add collision shape
+                    _collisionShapes.push_back(_agents.back().body()->getLinkCollider(i)->getCollisionShape());
                 }
                 else {
                     // Add collision object to the world
@@ -210,6 +242,9 @@ namespace beautiful_bullet {
                         collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
                     _world->addCollisionObject(_agents.back().body()->getBaseCollider(), collisionFilterGroup, collisionFilterMask);
+
+                    // Add collision shape
+                    _collisionShapes.push_back(_agents.back().body()->getBaseCollider()->getCollisionShape());
                 }
             }
 
