@@ -8,6 +8,7 @@ Robotics simulator based on Bullet Physics Engine
 - Remove debug messages
 - Add operation space control
 - Add flags when loading multibody collision shapes
+- Move assignment operator for Agent and Object
 
 ![alt text](media/bullet_logo.png?raw=true)
 
