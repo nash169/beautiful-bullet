@@ -164,7 +164,7 @@ namespace beautiful_bullet {
             _controllers.back()->init();
 
             if constexpr (sizeof...(args) > 0)
-                addControllers(args...);
+                addControllers(std::move(args)...);
 
             return *this;
         }
