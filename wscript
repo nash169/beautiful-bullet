@@ -12,9 +12,9 @@ srcdir = "."
 blddir = "build"
 
 # Tools' name and directory
-tools = {"magnum_dynamics": "",
-         "utils_cpp": "",
-         "control_lib": ""}
+tools = {"graphicslib": "",
+         "utilslib": "",
+         "controllib": ""}
 
 
 def options(opt):
@@ -138,7 +138,7 @@ def build(bld):
         )
 
     # Install tools
-    bld.install_files("${PREFIX}/share/waf", "scripts/beautiful_bullet.py")
+    bld.install_files("${PREFIX}/share/waf", "scripts/beautifulbullet.py")
     bld.install_files("${PREFIX}/share/waf", "waf_tools/utils.py")
 
 # for root, dirs, files in os.walk(directory):

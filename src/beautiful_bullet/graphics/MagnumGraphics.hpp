@@ -9,16 +9,16 @@
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
 
-#include <magnum_dynamics/MagnumApp.hpp>
-#include <magnum_dynamics/tools/helper.hpp>
+#include <graphics_lib/Graphics.hpp>
+#include <graphics_lib/tools/helper.hpp>
 
 #include "beautiful_bullet/Simulator.hpp"
 #include "beautiful_bullet/graphics/AbstractGraphics.hpp"
 
+using namespace graphics_lib;
+
 namespace beautiful_bullet {
     namespace graphics {
-        using namespace magnum_dynamics;
-
         class MagnumGraphics : public AbstractGraphics {
         public:
             MagnumGraphics() : AbstractGraphics()
@@ -26,7 +26,7 @@ namespace beautiful_bullet {
                 int argc = 0;
                 char** argv = NULL;
 
-                _app = std::unique_ptr<MagnumApp>(new MagnumApp({argc, argv}));
+                _app = std::unique_ptr<Graphics>(new Graphics({argc, argv}));
 
                 _done = false;
             }
@@ -34,7 +34,7 @@ namespace beautiful_bullet {
             bool init(Simulator& simulator) override
             {
                 // Set camera pose
-                _app->camera()->setPose({6., 0., 2.});
+                _app->camera3D().setPose(Vector3{6., 0., 2.});
 
                 // Add objects to graphics
                 for (auto& object : simulator.objects()) {
@@ -130,10 +130,10 @@ namespace beautiful_bullet {
 
         protected:
             // Magnum-Dynamics application
-            std::unique_ptr<MagnumApp> _app;
+            std::unique_ptr<Graphics> _app;
 
             // for multibody
-            std::unordered_map<magnum_dynamics::Object*, btTransform*> _mapTransform;
+            std::unordered_map<objects::ObjectHandle3D*, btTransform*> _mapTransform;
 
             bool createVisualRecursive(const urdf::ModelInterface* model, const urdf::Link* node, btMultiBody* multibody, const std::string& path, int index = -1)
             {
