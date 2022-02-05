@@ -11,13 +11,7 @@
 
 // Pinocchio
 #ifdef USE_PINOCCHIO
-#include <pinocchio/algorithm/joint-configuration.hpp>
-#include <pinocchio/algorithm/kinematics.hpp>
-#include <pinocchio/algorithm/rnea.hpp>
-#include <pinocchio/multibody/data.hpp>
-#include <pinocchio/multibody/geometry.hpp>
-#include <pinocchio/multibody/model.hpp>
-#include <pinocchio/parsers/urdf.hpp>
+#include <pinocchio/multibody/fwd.hpp>
 #endif
 
 #include "beautiful_bullet/Control.hpp"
@@ -27,74 +21,24 @@ namespace beautiful_bullet {
     class Agent {
     public:
         /* Constructor */
-        Agent(const std::string& file, int flags = 0)
-        {
-            // Create loader
-            // _loader = std::make_shared<utils::BulletLoader>();
-
-            // Get multibody
-            _body = _loader.parseMultiBody(file, flags);
-
-// Pinocchio model
-#ifdef USE_PINOCCHIO
-            pinocchio::urdf::buildModel(file, _model);
-            _data = pinocchio::Data(_model); // _model.gravity.linear(Eigen::Vector3d(0, 0, -9.81));
-#endif
-
-            // Init agent internal state variable
-            _q.setZero(_body->getNumDofs());
-            _v.setZero(_body->getNumDofs());
-
-            // Store inertia frame of the root node
-            _rootFrame = _body->getBaseWorldTransform();
-        }
+        Agent(const std::string& file, int flags = 0);
 
         Agent() = default;
 
         // Move constructor
-        Agent(Agent&& other) noexcept
-        {
-            // Move (copy) state
-            _q = other._q;
-            _v = other._v;
-
-            // Move RigidBody pointer
-            _body = other._body;
-            other._body = nullptr;
-
-// Move Pinocchio objects
-#ifdef USE_PINOCCHIO
-            _data = other._data;
-            _model = other._model;
-#endif
-
-            // Move loader
-            _loader = other._loader;
-
-            // Move root frame
-            _rootFrame = other._rootFrame;
-
-            // Move controllers
-            for (auto& controller : other._controllers)
-                _controllers.push_back(std::move(controller));
-
-            // Clear other controllers
-            other._controllers.clear();
-            other._controllers.shrink_to_fit();
-        }
+        Agent(Agent&& other) noexcept;
 
         // No copy constructor (check explicit and default)
         Agent(const Agent&) = delete;
 
         // Destroyer (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
-        ~Agent()
-        {
-            _controllers.clear();
-            _controllers.shrink_to_fit();
-        }
+        ~Agent();
 
         /* Get multibody pointer */
         btMultiBody* body() { return _body; }
+
+        /* Get position */
+        std::pair<Eigen::Vector3d, Eigen::Matrix3d> poseJoint(const size_t& index = -1);
 
         /* Get agent state */
         const Eigen::VectorXd& state() { return _q; }
@@ -169,36 +113,13 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        /* Update model */
-        void update()
-        {
-            // Get joint pose and vel
-            for (size_t i = 0; i < _body->getNumDofs(); i++) {
-                _q(i) = _body->getJointPos(i);
-                _v(i) = _body->getJointVel(i);
-            }
-
-            // Command force
-            Eigen::VectorXd tau = Eigen::VectorXd::Zero(_body->getNumDofs());
-
-// Gravity compensation
 #ifdef USE_PINOCCHIO
-            tau += pinocchio::nonLinearEffects(_model, _data, _q, _v); // pinocchio::computeGeneralizedGravity(_model, _data, _q);
+        /* Inverse Kinematics */
+        Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const size_t& index = -1);
 #endif
 
-            // Control
-            for (auto& controller : _controllers)
-                tau += controller->control(_q, _v);
-
-            // Set gravity compensation
-            for (size_t i = 0; i < _body->getNumDofs(); i++) {
-                // Clip force
-                clipForce(i, tau(i));
-
-                // Apply force
-                _body->addJointTorque(i, tau(i));
-            }
-        }
+        /* Update model */
+        void update();
 
     protected:
         // Agent's state (pos and vel)
@@ -209,8 +130,11 @@ namespace beautiful_bullet {
 
 // Dynamics model
 #ifdef USE_PINOCCHIO
-        pinocchio::Data _data;
-        pinocchio::Model _model;
+        // Try to have them as pointers to alleviate compiling time required by Pinocchio
+        pinocchio::Data* _data = nullptr;
+        pinocchio::Model* _model = nullptr;
+        // pinocchio::Data _data;
+        // pinocchio::Model _model;
 #endif
 
         // Loader
