@@ -140,8 +140,3 @@ def build(bld):
     # Install tools
     bld.install_files("${PREFIX}/share/waf", "scripts/beautifulbullet.py")
     bld.install_files("${PREFIX}/share/waf", "waf_tools/utils.py")
-
-# for root, dirs, files in os.walk(directory):
-#     for filename in files:
-#         if filename.endswith(('.jpg', '.jpeg', '.gif', '.png')):
-#             pass
