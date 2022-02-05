@@ -137,51 +137,6 @@ namespace beautiful_bullet {
 
             bool createVisualRecursive(const urdf::ModelInterface* model, const urdf::Link* node, btMultiBody* multibody, const std::string& path, int index = -1)
             {
-                // for (auto& collision : node->collision_array) {
-                //     // Collision
-                //     btTransform transformCollision = linkFrames(collision.get());
-
-                //     switch (collision->geometry->type) {
-                //     case urdf::Geometry::SPHERE: {
-                //         urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
-                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     case urdf::Geometry::BOX: {
-                //         urdf::Box* box = dynamic_cast<urdf::Box*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
-                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     case urdf::Geometry::CYLINDER: {
-                //         urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
-                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     case urdf::Geometry::MESH: {
-                //         urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename).addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformCollision) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     default:
-                //         return false;
-                //     }
-                // }
-
                 for (auto& visual : node->visual_array) {
                     // Origin
                     btTransform transformVisual = linkFrames(visual.get());
@@ -238,6 +193,54 @@ namespace beautiful_bullet {
                 }
 
                 return true;
+            }
+
+            bool createCollisionRecursive(const urdf::ModelInterface* model, const urdf::Link* node, btMultiBody* multibody, const std::string& path, int index = -1)
+            {
+                for (auto& collision : node->collision_array) {
+                    // Collision
+                    btTransform transformCollision = linkFrames(collision.get());
+
+                    switch (collision->geometry->type) {
+                    case urdf::Geometry::SPHERE: {
+                        urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
+                                                                           .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    case urdf::Geometry::BOX: {
+                        urdf::Box* box = dynamic_cast<urdf::Box*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
+                                                                           .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    case urdf::Geometry::CYLINDER: {
+                        urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
+                                                                           .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    case urdf::Geometry::MESH: {
+                        urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename).addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformCollision) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    default:
+                        return false;
+                    }
+                }
             }
 
             template <typename Type>
