@@ -202,7 +202,7 @@ namespace beautiful_bullet {
             // Assert shape
             btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
 
-            //rigidbody is dynamic if and only if mass is non zero, otherwise static
+            // rigidbody is dynamic if and only if mass is non zero, otherwise static
             bool isDynamic = (mass != 0.f);
 
             // Calculate inertia
