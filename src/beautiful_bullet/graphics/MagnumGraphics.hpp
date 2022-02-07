@@ -241,6 +241,13 @@ namespace beautiful_bullet {
                         return false;
                     }
                 }
+
+                for (std::size_t i = 0; i < node->child_links.size(); ++i) {
+                    if (!createCollisionRecursive(model, node->child_links[i].get(), multibody, path, index + 1 + i))
+                        return false;
+                }
+
+                return true;
             }
 
             template <typename Type>
