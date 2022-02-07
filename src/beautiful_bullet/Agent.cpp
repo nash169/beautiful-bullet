@@ -1,14 +1,11 @@
 #include "beautiful_bullet/Agent.hpp"
 
 // Pinocchio
-#ifdef USE_PINOCCHIO
-#include <pinocchio/parsers/urdf.hpp>
-
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
-#endif
+#include <pinocchio/parsers/urdf.hpp>
 
 namespace beautiful_bullet {
     /* Constructor */
@@ -20,20 +17,23 @@ namespace beautiful_bullet {
         // Get multibody
         _body = _loader.parseMultiBody(file, flags);
 
-// Pinocchio model
-#ifdef USE_PINOCCHIO
-        _model = new pinocchio::Model();
-        pinocchio::urdf::buildModel(file, *_model);
-        // std::cout << _model->nv << std::endl;
-        _data = new pinocchio::Data(*_model); // _model.gravity.linear(Eigen::Vector3d(0, 0, -9.81));
-#endif
-
         // Init agent internal state variable
         _q.setZero(_body->getNumDofs());
         _v.setZero(_body->getNumDofs());
 
         // Store inertia frame of the root node
+        // (not keeping track of it at the moment)
         _rootFrame = _body->getBaseWorldTransform();
+
+        // Pinocchio model
+        _model = new pinocchio::Model();
+        pinocchio::urdf::buildModel(file, *_model);
+
+        // Pinocchio data
+        _data = new pinocchio::Data(*_model); // _model.gravity.linear(Eigen::Vector3d(0, 0, -9.81));
+
+        // Update pinocchio forward kinematics
+        pinocchio::forwardKinematics(*_model, *_data, _q, _v);
     }
 
     /* Move constructor */
@@ -47,14 +47,12 @@ namespace beautiful_bullet {
         _body = other._body;
         other._body = nullptr;
 
-// Move Pinocchio objects
-#ifdef USE_PINOCCHIO
+        // Move Pinocchio objects
         _data = other._data;
         other._data = nullptr;
 
         _model = other._model;
         other._model = nullptr;
-#endif
 
         // Move loader
         _loader = other._loader;
@@ -77,26 +75,107 @@ namespace beautiful_bullet {
         _controllers.clear();
         _controllers.shrink_to_fit();
 
-#ifdef USE_PINOCCHIO
+        // Delete pinocchio objects
         delete _data;
         delete _model;
-#endif
     }
 
-#ifdef USE_PINOCCHIO
-    std::pair<Eigen::Vector3d, Eigen::Matrix3d> Agent::poseJoint(const size_t& index)
+    /* Set agent (base) position */
+    Agent& Agent::setPosition(const double& x, const double& y, const double& z)
     {
-        pinocchio::SE3 oMi = _data->oMi[(!index || index >= _model->nv) ? _model->nv - 1 : index];
+        _body->setBasePos(btVector3(x, y, z) + _rootFrame.getOrigin());
 
-        return std::make_pair(oMi.translation_impl(), oMi.rotation_impl());
+        btAlignedObjectArray<btQuaternion> scratch_q;
+        btAlignedObjectArray<btVector3> scratch_m;
+        _body->forwardKinematics(scratch_q, scratch_m);
+        _body->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+
+        return *this;
     }
-#endif
 
-#ifdef USE_PINOCCHIO
+    /* Set agent (base) orientation */
+    Agent& Agent::setOrientation(const double& roll, const double& pitch, const double& yaw)
+    {
+        _body->setWorldToBaseRot(btQuaternion(yaw, pitch, roll));
+
+        btAlignedObjectArray<btQuaternion> scratch_q;
+        btAlignedObjectArray<btVector3> scratch_m;
+        _body->forwardKinematics(scratch_q, scratch_m);
+        _body->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+
+        return *this;
+    }
+
+    /* Set agent state */
+    Agent& Agent::setState(const Eigen::VectorXd& q)
+    {
+        // Update agent state
+        _q = q;
+
+        // Update bullet body state
+        for (size_t i = 0; i < _body->getNumDofs(); i++)
+            _body->setJointPos(i, _q(i));
+
+        // Update bullet world state
+        btAlignedObjectArray<btQuaternion> scratch_q;
+        btAlignedObjectArray<btVector3> scratch_m;
+        _body->forwardKinematics(scratch_q, scratch_m);
+        _body->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+
+        // Update pinocchio state (anything else necessary?)
+        pinocchio::forwardKinematics(*_model, *_data, _q, _v);
+
+        return *this;
+    }
+
+    /* Set agent state */
+    Agent& Agent::setVelocity(const Eigen::VectorXd& v)
+    {
+        // Update agent state
+        _v = v;
+
+        // Update bullet body state
+        for (size_t i = 0; i < _body->getNumDofs(); i++)
+            _body->setJointVel(i, _v(i));
+
+        // Update bullet world state
+        btAlignedObjectArray<btQuaternion> scratch_q;
+        btAlignedObjectArray<btVector3> scratch_m;
+        _body->forwardKinematics(scratch_q, scratch_m);
+        _body->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+
+        // Update pinocchio state (anything else necessary?)
+        pinocchio::forwardKinematics(*_model, *_data, _q, _v);
+
+        return *this;
+    }
+
+    Eigen::MatrixXd Agent::jacobian(const int& index)
+    {
+        pinocchio::Data::Matrix6x J(6, _model->nv);
+        J.setZero();
+        pinocchio::computeJointJacobian(*_model, *_data, _q, (index == -1 || index >= _model->nv) ? _model->nv - 1 : index, J);
+
+        return J;
+    }
+
+    /* This might be very slow (find a more efficient way) */
+    Eigen::Matrix<double, 6, 1> Agent::poseJoint(const int& index)
+    {
+        // Update pinocchio state
+        pinocchio::forwardKinematics(*_model, *_data, _q, _v);
+
+        // Get joint pose
+        pinocchio::SE3 oMi = _data->oMi[(index == -1 || index >= _model->nv) ? _model->nv - 1 : index];
+        Eigen::AngleAxisd rot(oMi.rotation_impl());
+
+        return (Eigen::Matrix<double, 6, 1>() << oMi.translation_impl(), rot.angle() * rot.axis()).finished();
+    }
+
     /* Inverse Kinematics */
-    Eigen::VectorXd Agent::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const size_t& index)
+    Eigen::VectorXd Agent::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const int& index)
     {
-        const int JOINT_ID = (!index || index >= _model->njoints) ? _model->njoints - 1 : index;
+        const int JOINT_ID = (index == -1 || index >= _model->nv) ? _model->nv - 1 : index;
 
         // Desired Pose
         const pinocchio::SE3 oMdes(orientation, position);
@@ -120,7 +199,7 @@ namespace beautiful_bullet {
 
         for (int i = 0;; i++) {
             // Compute the forward kinematics
-            pinocchio::forwardKinematics(*_model, *_data, _q);
+            pinocchio::forwardKinematics(*_model, *_data, q);
 
             // Compute error between current and desired pose
             const pinocchio::SE3 dMi = oMdes.actInv(_data->oMi[JOINT_ID]);
@@ -137,7 +216,7 @@ namespace beautiful_bullet {
             }
 
             // Compute the jacobian
-            pinocchio::computeJointJacobian(*_model, *_data, _q, JOINT_ID, J);
+            pinocchio::computeJointJacobian(*_model, *_data, q, JOINT_ID, J);
 
             // Calculate damped pseudo-inverse (here why not applying Mantegazza method?)
             pinocchio::Data::Matrix6 JJt;
@@ -148,7 +227,7 @@ namespace beautiful_bullet {
             v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
 
             // Calculate configuration
-            q = pinocchio::integrate(*_model, _q, v * DT);
+            q = pinocchio::integrate(*_model, q, v * DT);
 
             if (!(i % 10))
                 std::cout << i << ": error = " << err.transpose() << std::endl;
@@ -156,7 +235,6 @@ namespace beautiful_bullet {
 
         return q;
     }
-#endif
 
     /* Update model */
     void Agent::update()
@@ -170,14 +248,25 @@ namespace beautiful_bullet {
         // Command force
         Eigen::VectorXd tau = Eigen::VectorXd::Zero(_body->getNumDofs());
 
-// Gravity compensation
-#ifdef USE_PINOCCHIO
+        // Gravity compensation
         tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v); // pinocchio::computeGeneralizedGravity(_model, _data, _q);
-#endif
 
         // Control
-        for (auto& controller : _controllers)
-            tau += controller->control(_q, _v);
+        for (auto& controller : _controllers) {
+            if (controller->controlMode() == ControlMode::CONFIGURATIONSPACE)
+                tau += controller->control(_q, _v);
+            else if (controller->controlMode() == ControlMode::OPERATIONSPACE) {
+                Eigen::MatrixXd J = jacobian(controller->controlRef());
+                pinocchio::SE3 pose = _data->oMi[6];
+
+                Eigen::Matrix<double, 6, 6> rotation = Eigen::MatrixXd::Zero(6, 6);
+
+                rotation.block(0, 0, 3, 3) = pose.rotation();
+                rotation.block(3, 3, 3, 3) = pose.rotation();
+
+                tau += J.transpose() * controller->control(poseJoint(controller->controlRef()), J * _v);
+            }
+        }
 
         // Set gravity compensation
         for (size_t i = 0; i < _body->getNumDofs(); i++) {
