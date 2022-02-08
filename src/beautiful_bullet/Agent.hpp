@@ -51,8 +51,8 @@ namespace beautiful_bullet {
         utils::BulletLoader& loader() { return _loader; }
         // std::shared_ptr<utils::BulletLoader> loader() { return _loader; }
 
-        /* Set multibody */ // (remember to init state here)
-        Agent& setBody(btMultiBody* body)
+        /* Set multibody */
+        Agent& setBody(btMultiBody* body) // (remember to init state here)
         {
             _body = body;
 

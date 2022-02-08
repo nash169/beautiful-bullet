@@ -167,9 +167,12 @@ namespace beautiful_bullet {
 
         // Get joint pose
         pinocchio::SE3 oMi = _data->oMi[(index == -1 || index >= _model->nv) ? _model->nv - 1 : index];
-        Eigen::AngleAxisd rot(oMi.rotation_impl());
+        Eigen::AngleAxisd rot(oMi.rotation());
 
-        return (Eigen::Matrix<double, 6, 1>() << oMi.translation_impl(), rot.angle() * rot.axis()).finished();
+        // std::cout << oMi.translation().transpose() << std::endl;
+        // std::cout << oMi.rotation() << std::endl;
+
+        return (Eigen::Matrix<double, 6, 1>() << oMi.translation(), rot.angle() * rot.axis()).finished();
     }
 
     /* Inverse Kinematics */
@@ -256,15 +259,36 @@ namespace beautiful_bullet {
             if (controller->controlMode() == ControlMode::CONFIGURATIONSPACE)
                 tau += controller->control(_q, _v);
             else if (controller->controlMode() == ControlMode::OPERATIONSPACE) {
-                Eigen::MatrixXd J = jacobian(controller->controlRef());
-                pinocchio::SE3 pose = _data->oMi[6];
+                Eigen::Vector3d xDes(0.324141, -0.0879529, 1.06775);
 
-                Eigen::Matrix<double, 6, 6> rotation = Eigen::MatrixXd::Zero(6, 6);
+                Eigen::Matrix3d oDes;
+                oDes << -0.650971, 0.508233, -0.563859,
+                    -0.613746, 0.0847368, 0.784943,
+                    0.446713, 0.857041, 0.256765;
 
-                rotation.block(0, 0, 3, 3) = pose.rotation();
-                rotation.block(3, 3, 3, 3) = pose.rotation();
+                // pinocchio::forwardKinematics(*_model, *_data, _q, _v);
+                pinocchio::computeJointJacobians(*_model, *_data, _q);
+                pinocchio::Data::Matrix6x J(6, _model->nv);
+                J.setZero();
+                // pinocchio::computeJointJacobian(*_model, *_data, _q, 6, J);
+                pinocchio::getJointJacobian(*_model, *_data, 6, pinocchio::WORLD, J);
 
-                tau += J.transpose() * controller->control(poseJoint(controller->controlRef()), J * _v);
+                pinocchio::SE3 poseDes(oDes, xDes),
+                    poseCurr = _data->oMi[6];
+
+                double k = .01, dt = .01;
+                Eigen::Matrix<double, 6, 1> err = pinocchio::log6(poseDes.actInv(poseCurr)),
+                                            oldPose = pinocchio::log6(poseCurr);
+
+                err.array().tail(3) = 0;
+                oldPose.array().tail(3) = 0;
+
+                Eigen::MatrixXd A = -0.1 * Eigen::MatrixXd::Identity(6, 6);
+
+                Eigen::VectorXd x_dot = A * err;
+
+                tau += J.transpose() * k * (oldPose + dt * x_dot);
+                // tau += J.transpose() * controller->control(poseJoint(controller->controlRef()), J * _v);
             }
         }
 
