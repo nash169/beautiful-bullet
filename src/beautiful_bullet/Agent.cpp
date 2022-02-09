@@ -1,11 +1,14 @@
 #include "beautiful_bullet/Agent.hpp"
 
 // Pinocchio
+#include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/parsers/urdf.hpp>
+
+#include <control_lib/controllers/Feedback.hpp>
 
 namespace beautiful_bullet {
     /* Constructor */
@@ -252,7 +255,8 @@ namespace beautiful_bullet {
         Eigen::VectorXd tau = Eigen::VectorXd::Zero(_body->getNumDofs());
 
         // Gravity compensation
-        tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v); // pinocchio::computeGeneralizedGravity(_model, _data, _q);
+        tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v); // pinocchio::computeGeneralizedGravity(*_model, *_data, _q); //
+        // std::cout << "Force before: " << tau.transpose() << std::endl;
 
         // Control
         for (auto& controller : _controllers) {
@@ -268,26 +272,64 @@ namespace beautiful_bullet {
 
                 // pinocchio::forwardKinematics(*_model, *_data, _q, _v);
                 pinocchio::computeJointJacobians(*_model, *_data, _q);
+                pinocchio::framesForwardKinematics(*_model, *_data, _q);
                 pinocchio::Data::Matrix6x J(6, _model->nv);
                 J.setZero();
+                pinocchio::getFrameJacobian(*_model, *_data, _model->getFrameId("lbr_iiwa_joint_7"), pinocchio::LOCAL, J);
                 // pinocchio::computeJointJacobian(*_model, *_data, _q, 6, J);
-                pinocchio::getJointJacobian(*_model, *_data, 6, pinocchio::WORLD, J);
+                // pinocchio::getJointJacobian(*_model, *_data, 6, pinocchio::LOCAL, J);
 
                 pinocchio::SE3 poseDes(oDes, xDes),
-                    poseCurr = _data->oMi[6];
+                    // poseCurr = _data->oMi[6];
+                    poseCurr = _data->oMf[_model->getFrameId("lbr_iiwa_joint_7")];
 
-                double k = .01, dt = .01;
-                Eigen::Matrix<double, 6, 1> err = pinocchio::log6(poseDes.actInv(poseCurr)),
-                                            oldPose = pinocchio::log6(poseCurr);
+                // std::cout << poseCurr.translation().transpose() << std::endl;
 
-                err.array().tail(3) = 0;
-                oldPose.array().tail(3) = 0;
+                // std::cout << poseCurr.translation().transpose() << std::endl;
+                // std::cout << _model->existFrame("lbr_iiwa_joint_7") << std::endl;
+                // std::cout << _model->getJointId("lbr_iiwa_joint_7") << " " << _model->getBodyId("lbr_iiwa_joint_7") << " " << _model->getFrameId("lbr_iiwa_joint_7") << std::endl;
+
+                Eigen::MatrixXd R = Eigen::MatrixXd::Zero(6, 6);
+                R.block(0, 0, 3, 3) = poseCurr.rotation();
+                R.block(3, 3, 3, 3) = poseCurr.rotation();
+
+                double k = 1, dt = .01;
+                Eigen::Matrix<double, 6, 1> err = pinocchio::log6(poseDes.actInv(poseCurr)).toVector(),
+                                            goalPose, // = pinocchio::log6(poseDes).toVector(),
+                    oldPose; // = pinocchio::log6(poseCurr).toVector();
+
+                goalPose << xDes, pinocchio::log6(poseDes).toVector().tail(3);
+                oldPose << poseCurr.translation(), pinocchio::log6(poseCurr).toVector().tail(3);
+
+                // Eigen::Matrix<double, 6, 1> err = Eigen::VectorXd::Zero(6),
+                //                             oldPose = Eigen::VectorXd::Zero(6);
+
+                // err.head(3) = poseCurr.translation() - poseDes.translation();
+                // oldPose.head(3) = poseCurr.translation();
+
+                control_lib::utils::ControlState curr(6, control_lib::ControlSpace::LINEAR | control_lib::ControlSpace::ANGLEAXIS),
+                    des(6, control_lib::ControlSpace::LINEAR | control_lib::ControlSpace::ANGLEAXIS);
+
+                curr.setState(oldPose);
+                des.setState(goalPose);
+
+                // J = R * J;
 
                 Eigen::MatrixXd A = -0.1 * Eigen::MatrixXd::Identity(6, 6);
 
-                Eigen::VectorXd x_dot = A * err;
+                Eigen::VectorXd x_dot = A * (curr - des).getPos();
 
-                tau += J.transpose() * k * (oldPose + dt * x_dot);
+                // x_dot.array().tail(3) = 0;
+
+                // err.array().tail(3) = 0;
+                // oldPose.array().tail(3) = 0;
+
+                tau -= k * J.transpose() * (J * _v - x_dot);
+                // std::cout << "Error: " << err.transpose() << std::endl;
+                // std::cout << "Force: " << tau.transpose() << std::endl;
+                // std::cout << "Jacobian: " << J << std::endl;
+                // std::cout << "Dimension: " << _data->oMi.size() << std::endl;
+
                 // tau += J.transpose() * controller->control(poseJoint(controller->controlRef()), J * _v);
             }
         }

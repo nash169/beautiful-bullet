@@ -176,7 +176,7 @@ int main(int argc, char const* argv[])
     // Set agents state
     Eigen::VectorXd state(7);
     state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
-    iiwaBullet.setState(state);
+    // iiwaBullet.setState(state);
 
     // poseDes.setState(iiwaBullet.poseJoint());
 
@@ -206,10 +206,12 @@ int main(int argc, char const* argv[])
 
     // Add controllers
     // iiwa.setState(iiwa.inverseKinematics(xDes, oDes));
-    iiwa.addControllers(std::make_unique<OperationSpaceControl>());
+    // iiwa.addControllers(std::make_unique<OperationSpaceControl>());
     // iiwa.addControllers(std::make_unique<ConfigurationSpaceControl>());
-
+    iiwa.setState(state);
     // Add agent to simulator
+
+    iiwaBullet.addControllers(std::make_unique<OperationSpaceControl>());
     simulator.addAgents(iiwaBullet, iiwa);
 
     // Run simulation
