@@ -138,80 +138,25 @@ int main(int argc, char const* argv[])
     iiwaBullet.setPosition(0, -1, 0);
     iiwa.setPosition(0, 1, 0);
 
-    // Try inverse kinematics
-    // std::cout << iiwaBullet.poseJoint().transpose() << std::endl;
-
-    // Eigen::Vector3d xCurr(0, 0, 1.18);
-    // Eigen::Matrix3d oCurr;
-    // oCurr << -1, 0, 0,
-    //     0, 0, 1,
-    //     0, 1, 0;
-
-    Eigen::Vector3d xDes(0.324141, -0.0879529, 1.06775);
-    Eigen::Matrix3d oDes;
-    oDes << -0.650971, 0.508233, -0.563859,
-        -0.613746, 0.0847368, 0.784943,
-        0.446713, 0.857041, 0.256765;
-
-    // control_lib::utils::ControlState poseCurr(6, ControlSpace::LINEAR | ControlSpace::ANGLEAXIS),
-    //     poseDes(6, ControlSpace::LINEAR | ControlSpace::ANGLEAXIS);
-
-    // pinocchio::SE3 pose(oDes, xDes);
-    // Eigen::Matrix<double, 6, 1> liealgebra = pinocchio::log6(pose);
-
-    // std::cout << liealgebra.transpose() << std::endl;
-
-    // Eigen::AngleAxisd aaxis(oDes);
-
-    // std::cout << aaxis.angle() * aaxis.axis().transpose() << std::endl;
-
-    // std::cout << beautiful_bullet::tools::lieAlgebraSE3(xDes, oDes).transpose() << std::endl;
-
-    // std::cout << iiwaBullet.inverseKinematics(xDes, oDes).transpose() << std::endl;
-
-    // std::cout << iiwaBullet.poseJoint().transpose() << std::endl;
-
-    // poseCurr.setState(iiwaBullet.poseJoint());
-
     // Set agents state
     Eigen::VectorXd state(7);
     state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
-    // iiwaBullet.setState(state);
-
-    // poseDes.setState(iiwaBullet.poseJoint());
-
-    // pinocchio::SE3 oMdes(oDes, xDes), oMcurr(oCurr, xCurr);
-
-    // std::cout << poseDes.getPos().transpose() << std::endl;
-    // std::cout << pinocchio::log6(oMdes).toVector().transpose() << std::endl;
-
-    // Eigen::AngleAxisd temp(oDes.transpose() * oCurr);
-    // std::cout << temp.angle() * temp.axis() << std::endl;
-
-    // pinocchio::SE3 dMi = oMdes.actInv(oMcurr);
-    // std::cout << pinocchio::log6(dMi).toVector().transpose() << std::endl;
-    // std::cout << dMi.translation().transpose() << std::endl;
-    // std::cout << (poseCurr - poseDes)._pose.transpose() - 1 << std::endl;
-
-    // double k = 2.3;
-
-    // Eigen::Matrix<double, 3, 1> errOrientation = (poseCurr - poseDes)._orientation;
-    // Eigen::Matrix3d mat = oDes.transpose() * oCurr;
-    // Eigen::Matrix3d mat = Eigen::AngleAxisd(errOrientation.norm(), errOrientation.normalized()).toRotationMatrix();
-
-    // std::cout << (poseCurr - poseDes).getPos().transpose() << std::endl;
-    // std::cout << k * beautiful_bullet::tools::lieAlgebraSE3(oDes.transpose() * (poseCurr - poseDes)._pose, mat).transpose() << std::endl;
-
-    // std::cout << iiwaBullet.poseJoint().transpose() << std::endl;
-
-    // Add controllers
-    // iiwa.setState(iiwa.inverseKinematics(xDes, oDes));
-    // iiwa.addControllers(std::make_unique<OperationSpaceControl>());
-    // iiwa.addControllers(std::make_unique<ConfigurationSpaceControl>());
     iiwa.setState(state);
-    // Add agent to simulator
 
+    // Inverse Kinematics
+    Eigen::Vector3d xDes(0.365308, -0.0810892, 1.13717);
+    Eigen::Matrix3d oDes;
+    oDes << 0.591427, -0.62603, 0.508233,
+        0.689044, 0.719749, 0.0847368,
+        -0.418848, 0.300079, 0.857041;
+
+    // iiwaBullet.setState(iiwaBullet.inverseKinematics(xDes, oDes));
+
+    // Control
     iiwaBullet.addControllers(std::make_unique<OperationSpaceControl>());
+    // iiwaBullet.addControllers(std::make_unique<ConfigurationSpaceControl>());
+
+    // Add agent to simulator
     simulator.addAgents(iiwaBullet, iiwa);
 
     // Run simulation

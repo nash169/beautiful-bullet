@@ -88,7 +88,7 @@ namespace beautiful_bullet {
         }
 
         /* Inverse Kinematics */
-        Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const int& index = -1);
+        Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& index = "");
 
         /* Update model */
         void update();
