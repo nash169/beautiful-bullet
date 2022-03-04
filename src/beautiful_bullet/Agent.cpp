@@ -153,11 +153,17 @@ namespace beautiful_bullet {
         return *this;
     }
 
-    Eigen::MatrixXd Agent::jacobian(const int& index)
+    Eigen::MatrixXd Agent::jacobian(const std::string& frame)
     {
+        // Get frame ID
+        const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+        // Init Jacobian
         pinocchio::Data::Matrix6x J(6, _model->nv);
         J.setZero();
-        pinocchio::computeJointJacobian(*_model, *_data, _q, (index == -1 || index >= _model->nv) ? _model->nv - 1 : index, J);
+
+        // Compute the jacobian
+        pinocchio::computeFrameJacobian(*_model, *_data, _q, FRAME_ID, J);
 
         return J;
     }

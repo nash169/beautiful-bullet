@@ -36,7 +36,7 @@ namespace beautiful_bullet {
         btMultiBody* body() { return _body; }
 
         /* Get Jacobian */
-        Eigen::MatrixXd jacobian(const int& index = -1);
+        Eigen::MatrixXd jacobian(const std::string& frame = "");
 
         /* Get position */
         Eigen::Matrix<double, 6, 1> poseJoint(const int& index = -1);
