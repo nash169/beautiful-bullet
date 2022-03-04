@@ -157,6 +157,9 @@ namespace beautiful_bullet {
             /* Set Orientation */
             RigidBody& setOrientation(const double& roll, const double& pitch, const double& yaw);
 
+            /* Activate gravity compensation */
+            RigidBody& activateGravity();
+
             /* Add controllers */
             template <typename... Args>
             RigidBody& addControllers(std::unique_ptr<control::RigidBodyCtr> controller, Args... args);
@@ -176,6 +179,9 @@ namespace beautiful_bullet {
             // https://stackoverflow.com/questions/8777724/store-derived-class-objects-in-base-class-variables
             // https://stackoverflow.com/questions/1541031/is-it-possible-for-slicing-to-occur-with-smart-pointers
             std::unique_ptr<BodyParams> _params;
+
+            // Gravity compensation
+            bool _gravity;
 
             // Controllers (for now shared because of issues in moving the agent object)
             std::vector<std::unique_ptr<control::RigidBodyCtr>> _controllers;

@@ -75,6 +75,9 @@ namespace beautiful_bullet {
                 // Set friction
                 _body->setFriction(params.friction);
             }
+
+            // Default no gravity compensation
+            _gravity = false;
         }
 
         // Move constructor
@@ -86,6 +89,7 @@ namespace beautiful_bullet {
 
             // Move (copy) object type
             _type = other._type;
+            _gravity = other._gravity;
 
             // Move params
             _params = std::move(other._params);
@@ -135,6 +139,12 @@ namespace beautiful_bullet {
             return *this;
         }
 
+        RigidBody& RigidBody::activateGravity()
+        {
+            _gravity = true;
+            return *this;
+        }
+
         template <typename... Args>
         RigidBody& RigidBody::addControllers(std::unique_ptr<control::RigidBodyCtr> controller, Args... args)
         {
@@ -150,7 +160,23 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        void RigidBody::update() {}
+        void RigidBody::update()
+        {
+            // Vector of applied forces
+            Eigen::Matrix<double, 6, 1> f = Eigen::VectorXd::Zero(6);
+
+            // Gravity compenstation
+            if (_gravity)
+                f(2) += 9.81 / _body->getInvMass();
+
+            // Controllers
+            for (auto& controller : _controllers)
+                f += controller->action(*this);
+
+            // Apply forces
+            _body->applyCentralForce(btVector3(f(0), f(1), f(2)));
+            _body->applyTorque(btVector3(f(3), f(4), f(5)));
+        }
 
         btRigidBody* RigidBody::createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)
         {

@@ -16,6 +16,9 @@ namespace beautiful_bullet {
     namespace control {
         class MultiBodyCtr : public AbstractControl<bodies::MultiBody> {
         public:
+            /* Constructor */
+            MultiBodyCtr(const ControlMode& mode = ControlMode::CONFIGURATIONSPACE) : _mode(mode) {}
+
             /* Get control mode */
             const ControlMode& mode() const { return _mode; }
 

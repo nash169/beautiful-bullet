@@ -42,11 +42,14 @@ namespace beautiful_bullet {
             /* Get agent state derivative */
             const Eigen::VectorXd& velocity();
 
-            /* Get position */
-            Eigen::Matrix<double, 6, 1> poseJoint(const int& index = -1);
+            /* Get pose of the frame */
+            Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
+
+            /* Get velocity of the frame */
+            Eigen::Matrix<double, 6, 1> frameVelocity(const std::string& frame = "");
 
             /* Get Jacobian */
-            Eigen::MatrixXd jacobian(const int& index = -1);
+            Eigen::MatrixXd jacobian(const std::string& frame = "");
 
             /* Get Bullet loader */
             utils::BulletLoader& loader() { return _loader; }
@@ -66,9 +69,24 @@ namespace beautiful_bullet {
             /* Set agent state */
             MultiBody& setVelocity(const Eigen::VectorXd& v);
 
+            /* Activate gravity compensation */
+            MultiBody& activateGravity();
+
             /* Add controllers */
             template <typename... Args>
-            MultiBody& addControllers(std::unique_ptr<control::MultiBodyCtr> controller, Args... args);
+            MultiBody& addControllers(std::unique_ptr<control::MultiBodyCtr> controller, Args... args)
+            {
+                // Add controller
+                _controllers.push_back(std::move(controller));
+
+                // Init controller
+                // _controllers.back()->init();
+
+                if constexpr (sizeof...(args) > 0)
+                    addControllers(std::move(args)...);
+
+                return *this;
+            }
 
             /* Inverse Kinematics */
             Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& index = "");
@@ -77,6 +95,9 @@ namespace beautiful_bullet {
             void update();
 
         protected:
+            // Gravity compensation
+            bool _gravity;
+
             // MultiBody's state (pos and vel)
             // Don't know if it is good to keep a copy of the body states here
             Eigen::VectorXd _q, _v;

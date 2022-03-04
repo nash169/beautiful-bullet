@@ -8,15 +8,10 @@
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/parsers/urdf.hpp>
 
-#include <control_lib/controllers/Feedback.hpp>
-
 namespace beautiful_bullet {
     namespace bodies {
         MultiBody::MultiBody(const std::string& file, int flags)
         {
-            // Create loader
-            // _loader = std::make_shared<utils::BulletLoader>();
-
             // Get multibody
             _body = _loader.parseMultiBody(file, flags);
 
@@ -33,10 +28,13 @@ namespace beautiful_bullet {
             pinocchio::urdf::buildModel(file, *_model);
 
             // Pinocchio data
-            _data = new pinocchio::Data(*_model); // _model.gravity.linear(Eigen::Vector3d(0, 0, -9.81));
+            _data = new pinocchio::Data(*_model);
 
             // Update pinocchio forward kinematics
             pinocchio::forwardKinematics(*_model, *_data, _q, _v);
+
+            // Default no gravity compensation
+            _gravity = false;
         }
 
         MultiBody::MultiBody(MultiBody&& other) noexcept
@@ -44,6 +42,7 @@ namespace beautiful_bullet {
             // Move (copy) state
             _q = other._q;
             _v = other._v;
+            _gravity = other._gravity;
 
             // Move RigidBody pointer
             _body = other._body;
@@ -87,27 +86,37 @@ namespace beautiful_bullet {
 
         const Eigen::VectorXd& MultiBody::velocity() { return _v; }
 
-        Eigen::Matrix<double, 6, 1> MultiBody::poseJoint(const int& index)
+        Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
         {
-            /* This might be very slow (find a more efficient way) */
-            // Update pinocchio state
-            pinocchio::forwardKinematics(*_model, *_data, _q, _v);
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
-            // Get joint pose
-            pinocchio::SE3 oMi = _data->oMi[(index == -1 || index >= _model->nv) ? _model->nv - 1 : index];
-            Eigen::AngleAxisd rot(oMi.rotation());
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, _q);
 
-            // std::cout << oMi.translation().transpose() << std::endl;
-            // std::cout << oMi.rotation() << std::endl;
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+            Eigen::AngleAxisd rot(oMf.rotation());
 
-            return (Eigen::Matrix<double, 6, 1>() << oMi.translation(), rot.angle() * rot.axis()).finished();
+            return (Eigen::Matrix<double, 6, 1>() << oMf.translation(), rot.angle() * rot.axis()).finished();
         }
 
-        Eigen::MatrixXd MultiBody::jacobian(const int& index)
+        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame)
         {
+            return jacobian(frame) * _v;
+        }
+
+        Eigen::MatrixXd MultiBody::jacobian(const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Init Jacobian
             pinocchio::Data::Matrix6x J(6, _model->nv);
             J.setZero();
-            pinocchio::computeJointJacobian(*_model, *_data, _q, (index == -1 || index >= _model->nv) ? _model->nv - 1 : index, J);
+
+            // Compute the jacobian
+            pinocchio::computeFrameJacobian(*_model, *_data, _q, FRAME_ID, J);
 
             return J;
         }
@@ -188,19 +197,9 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        /* Add controllers */
-        template <typename... Args>
-        MultiBody& MultiBody::addControllers(std::unique_ptr<control::MultiBodyCtr> controller, Args... args)
+        MultiBody& MultiBody::activateGravity()
         {
-            // Add controller
-            _controllers.push_back(std::move(controller));
-
-            // Init controller
-            // _controllers.back()->init();
-
-            if constexpr (sizeof...(args) > 0)
-                addControllers(std::move(args)...);
-
+            _gravity = true;
             return *this;
         }
 
@@ -281,68 +280,19 @@ namespace beautiful_bullet {
             Eigen::VectorXd tau = Eigen::VectorXd::Zero(_body->getNumDofs());
 
             // Gravity compensation
-            tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v); // pinocchio::computeGeneralizedGravity(*_model, *_data, _q); //
-            // std::cout << "Force before: " << tau.transpose() << std::endl;
+            if (_gravity)
+                tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v);
+            // pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
 
             // Control
             for (auto& controller : _controllers) {
                 if (controller->mode() == ControlMode::CONFIGURATIONSPACE)
                     tau += controller->action(*this);
-                else if (controller->mode() == ControlMode::OPERATIONSPACE) {
-                    // Goal
-                    Eigen::Vector3d xDes(0.365308, -0.0810892, 1.13717);
-                    Eigen::Matrix3d oDes;
-                    oDes << 0.591427, -0.62603, 0.508233,
-                        0.689044, 0.719749, 0.0847368,
-                        -0.418848, 0.300079, 0.857041;
-
-                    // Update kinematics and frames
-                    pinocchio::framesForwardKinematics(*_model, *_data, _q);
-
-                    // Poses
-                    const int id = _model->getFrameId("lbr_iiwa_link_7");
-                    pinocchio::SE3 poseCurr = _data->oMf[id],
-                                   poseDes(oDes, xDes);
-
-                    // Get Jacobian
-                    pinocchio::Data::Matrix6x J(6, _model->nv);
-                    J.setZero();
-                    pinocchio::computeFrameJacobian(*_model, *_data, _q, id, J);
-
-                    // Tangent space
-                    Eigen::Matrix<double, 6, 1> v1_p = pinocchio::log6(poseCurr).toVector(),
-                                                v2_p = pinocchio::log6(poseDes).toVector(),
-                                                err_p = pinocchio::log6(poseDes.actInv(poseCurr)).toVector();
-
-                    Eigen::Matrix<double, 6, 1> t1, t2, err_m;
-                    t1.head(3) = poseCurr.translation();
-                    t1.tail(3) = Eigen::AngleAxisd(poseCurr.rotation()).angle() * Eigen::AngleAxisd(poseCurr.rotation()).axis();
-                    t2.head(3) = poseDes.translation();
-                    t2.tail(3) = Eigen::AngleAxisd(poseDes.rotation()).angle() * Eigen::AngleAxisd(poseDes.rotation()).axis();
-                    control_lib::utils::ControlState v1_m(6, control_lib::ControlSpace::LINEAR | control_lib::ControlSpace::ANGLEAXIS),
-                        v2_m(6, control_lib::ControlSpace::LINEAR | control_lib::ControlSpace::ANGLEAXIS);
-                    v1_m.setState(t1);
-                    v2_m.setState(t2);
-                    err_m = (v1_m - v2_m).getPos();
-
-                    // Rotation matrix
-                    Eigen::MatrixXd R = Eigen::MatrixXd::Zero(6, 6);
-                    R.block(0, 0, 3, 3) = poseCurr.rotation();
-                    R.block(3, 3, 3, 3) = poseCurr.rotation();
-                    // J = R * J;
-
-                    // Dynamics
-                    Eigen::MatrixXd A = -0.1 * Eigen::MatrixXd::Identity(6, 6);
-                    Eigen::VectorXd x_dot = A * err_p;
-
-                    // Controller
-                    double k = 1;
-                    tau -= k * J.transpose() * (J * _v - x_dot);
-                    // tau += J.transpose() * controller->control(poseJoint(controller->controlRef()), J * _v);
-                }
+                else if (controller->mode() == ControlMode::OPERATIONSPACE)
+                    tau += jacobian(controller->frame()).transpose() * controller->action(*this);
             }
 
-            // Set gravity compensation
+            // Set torques
             for (size_t i = 0; i < _body->getNumDofs(); i++) {
                 // Clip force
                 clipForce(i, tau(i));

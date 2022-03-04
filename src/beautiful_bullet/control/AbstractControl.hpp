@@ -9,7 +9,7 @@ namespace beautiful_bullet {
         template <typename Agent>
         class AbstractControl {
         public:
-            virtual Eigen::VectorXd action(const Agent& agent) const = 0;
+            virtual Eigen::VectorXd action(Agent& agent) = 0;
         };
     } // namespace control
 
