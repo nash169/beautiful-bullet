@@ -5,6 +5,7 @@
 #endif
 
 #include <control_lib/controllers/Feedback2.hpp>
+#include <control_lib/controllers/LinearDynamics2.hpp>
 
 using namespace beautiful_bullet;
 using namespace control_lib;
@@ -15,38 +16,59 @@ struct Params {
 
     struct feedback : public defaults::feedback {
     };
+
+    struct linear_dynamics : public defaults::linear_dynamics {
+    };
 };
 
 class OperationSpaceCtr : public control::MultiBodyCtr {
 public:
     OperationSpaceCtr() : control::MultiBodyCtr(ControlMode::OPERATIONSPACE)
     {
-        // Set controlled frame
+        // set controlled frame
         _frame = "lbr_iiwa_link_7";
 
-        // Set gains
-        Eigen::MatrixXd K = 10 * Eigen::MatrixXd::Identity(6, 6),
-                        D = 2 * Eigen::MatrixXd::Identity(6, 6);
+        // set controller gains
+        Eigen::MatrixXd D = 1 * Eigen::MatrixXd::Identity(6, 6);
+        _controller.setDamping(D);
 
-        _controller.setStiffness(K)
-            .setDamping(D);
+        // set ds gains
+        Eigen::MatrixXd A = 0.1 * Eigen::MatrixXd::Identity(6, 6);
+        _ds.setDynamicsMatrix(A);
 
-        // Goal
+        // goal
         Eigen::Vector3d xDes(0.365308, -0.0810892, 1.13717);
         Eigen::Matrix3d oDes;
         oDes << 0.591427, -0.62603, 0.508233,
             0.689044, 0.719749, 0.0847368,
             -0.418848, 0.300079, 0.857041;
+        _sDes._trans = xDes;
+        _sDes._rot = oDes;
 
-        _controller.setReference(spatial::SE3(oDes, xDes));
+        // set reference
+        _ds.setReference(spatial::SE3(oDes, xDes));
     }
 
     Eigen::VectorXd action(bodies::MultiBody& body) override
     {
-        return _controller.action(spatial::SE3(body.framePose(_frame)));
+        // update reference
+        _sDes._vel = _ds.action(spatial::SE3(body.framePose(_frame)));
+
+        // curr state
+        spatial::SE3 sCurr;
+        sCurr._vel = body.frameVelocity(_frame);
+
+        return _controller.setReference(_sDes).action(sCurr);
     }
 
 protected:
+    // reference
+    spatial::SE3 _sDes;
+
+    // ds
+    controllers::LinearDynamics2<Params, spatial::SE3> _ds;
+
+    // controller
     controllers::Feedback2<Params, spatial::SE3> _controller;
 };
 
