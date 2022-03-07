@@ -6,6 +6,8 @@
 
 #include <control_lib/controllers/Feedback2.hpp>
 #include <control_lib/controllers/LinearDynamics2.hpp>
+#include <control_lib/spatial/RN.hpp>
+#include <control_lib/spatial/SE3.hpp>
 
 using namespace beautiful_bullet;
 using namespace control_lib;
@@ -25,6 +27,9 @@ class OperationSpaceCtr : public control::MultiBodyCtr {
 public:
     OperationSpaceCtr() : control::MultiBodyCtr(ControlMode::OPERATIONSPACE)
     {
+        // step
+        _dt = 0.01;
+
         // set controlled frame
         _frame = "lbr_iiwa_link_7";
 
@@ -51,18 +56,22 @@ public:
 
     Eigen::VectorXd action(bodies::MultiBody& body) override
     {
-        // update reference
-        _sDes._vel = _ds.action(spatial::SE3(body.framePose(_frame)));
-
-        // curr state
-        spatial::SE3 sCurr;
+        // current state
+        spatial::SE3 sCurr(body.framePose(_frame));
         sCurr._vel = body.frameVelocity(_frame);
 
-        return _controller.setReference(_sDes).action(sCurr);
+        // reference state
+        spatial::SE3 sRef;
+        sRef._vel = _ds.action(sCurr);
+
+        return _controller.setReference(sRef).action(sCurr);
     }
 
 protected:
-    // reference
+    // step
+    double _dt;
+
+    // reference DS
     spatial::SE3 _sDes;
 
     // ds
@@ -102,7 +111,6 @@ int main(int argc, char const* argv[])
 
     Eigen::VectorXd state(7);
     state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
-    iiwa;
 
     // Add bodies to simulation
     simulator.add(
