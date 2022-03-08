@@ -1,13 +1,33 @@
+/*
+    This file is part of beautiful-bullet.
+
+    Copyright (c) 2021, 2022 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/parsers/urdf.hpp>
-
-#include <control_lib/controllers/Feedback.hpp>
-
-using namespace control_lib;
 
 int main(int argc, char const* argv[])
 {
@@ -68,19 +88,6 @@ int main(int argc, char const* argv[])
 
     std::cout << "Jacobian pose: " << (J3 * (q - Eigen::VectorXd::Zero(7))).transpose() << std::endl;
     std::cout << "se3 pose: " << pinocchio::log6(endPose.actInv(initPose)).toVector().transpose() << std::endl;
-
-    control_lib::utils::ControlState poseCurr(6, ControlSpace::LINEAR | ControlSpace::ANGLEAXIS),
-        poseDes(6, ControlSpace::LINEAR | ControlSpace::ANGLEAXIS);
-
-    Eigen::Matrix<double, 6, 1> v1, v2;
-    v1.head(3) = initPose.translation();
-    v1.tail(3) = Eigen::AngleAxisd(initPose.rotation()).angle() * Eigen::AngleAxisd(initPose.rotation()).axis();
-    v2.head(3) = endPose.translation();
-    v2.tail(3) = Eigen::AngleAxisd(endPose.rotation()).angle() * Eigen::AngleAxisd(endPose.rotation()).axis();
-
-    poseCurr.setState(v1);
-    poseDes.setState(v2);
-    std::cout << (poseCurr - poseDes).getPos().transpose() << std::endl;
 
     return 0;
 }

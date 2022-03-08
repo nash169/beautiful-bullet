@@ -1,5 +1,29 @@
-#ifndef BEAUTIFUL_BULLET_GRAPHICS_MAGNUM_GRAPHICS_HPP
-#define BEAUTIFUL_BULLET_GRAPHICS_MAGNUM_GRAPHICS_HPP
+/*
+    This file is part of beautiful-bullet.
+
+    Copyright (c) 2021, 2022 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+#ifndef BEAUTIFULBULLET_GRAPHICS_MAGNUMGRAPHICS_HPP
+#define BEAUTIFULBULLET_GRAPHICS_MAGNUMGRAPHICS_HPP
 
 #include <iostream>
 #include <memory>
@@ -44,7 +68,7 @@ namespace beautiful_bullet {
                     pose.setOrigin(object.body()->getCenterOfMassPosition());
                     pose.setRotation(object.body()->getOrientation());
 
-                    if (object.type() == ObjectType::BOX) {
+                    if (object.type() == bodies::BodyType::BOX) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cube")
                                 .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(object.body()->getCollisionShape())->getHalfExtentsWithMargin())))
@@ -54,45 +78,45 @@ namespace beautiful_bullet {
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == ObjectType::SPHERE) {
+                    else if (object.type() == bodies::BodyType::SPHERE) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("sphere")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<SphereParams&>(object.params()).radius,
-                                            static_cast<SphereParams&>(object.params()).radius,
-                                            static_cast<SphereParams&>(object.params()).radius)))
+                                            static_cast<bodies::SphereParams&>(object.params()).radius,
+                                            static_cast<bodies::SphereParams&>(object.params()).radius,
+                                            static_cast<bodies::SphereParams&>(object.params()).radius)))
                                 .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == ObjectType::CYLINDER) {
+                    else if (object.type() == bodies::BodyType::CYLINDER) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cylinder")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<CylinderParams&>(object.params()).radius2,
-                                            static_cast<CylinderParams&>(object.params()).height,
-                                            static_cast<CylinderParams&>(object.params()).radius1)))
+                                            static_cast<bodies::CylinderParams&>(object.params()).radius2,
+                                            static_cast<bodies::CylinderParams&>(object.params()).height,
+                                            static_cast<bodies::CylinderParams&>(object.params()).radius1)))
                                 .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == ObjectType::CAPSULE) {
+                    else if (object.type() == bodies::BodyType::CAPSULE) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("capsule")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<CapsuleParams&>(object.params()).radius,
-                                            static_cast<CapsuleParams&>(object.params()).radius,
-                                            static_cast<CapsuleParams&>(object.params()).height)))
+                                            static_cast<bodies::CapsuleParams&>(object.params()).radius,
+                                            static_cast<bodies::CapsuleParams&>(object.params()).radius,
+                                            static_cast<bodies::CapsuleParams&>(object.params()).height)))
                                 .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
@@ -312,4 +336,4 @@ namespace beautiful_bullet {
     } // namespace graphics
 } // namespace beautiful_bullet
 
-#endif // BEAUTIFUL_BULLET_GRAPHICS_MAGNUM_GRAPHICS_HPP
+#endif // BEAUTIFULBULLET_GRAPHICS_MAGNUMGRAPHICS_HPP
