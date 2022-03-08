@@ -22,42 +22,21 @@
     SOFTWARE.
 */
 
-#ifndef BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
-#define BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#ifndef BEAUTIFULBULLET_CONTROL_RIGIDBODY_H
+#define BEAUTIFULBULLET_CONTROL_RIGIDBODY_H
 
-#include <cstddef>
+#include "beautiful_bullet/control/AbstractControl.hpp"
 
 namespace beautiful_bullet {
-    class Simulator;
+    namespace bodies {
+        class RigidBody;
+    } // namespace bodies
 
-    namespace graphics {
-        class AbstractGraphics {
-        public:
-            AbstractGraphics()
-                : _desiredFPS(40), _frameCounter(0), _init(false), _done(true), _pause(false) {}
-
-            bool done() { return _done; }
-
-            bool pause() { return _pause; }
-
-            size_t desiredFPS() { return _desiredFPS; }
-
-            AbstractGraphics& setDesiredFPS(size_t desiredFPS)
-            {
-                _desiredFPS = desiredFPS;
-                return *this;
-            }
-
-            virtual bool init(Simulator& simulator) { return true; }
-
-            virtual bool refresh() { return true; }
-
-        protected:
-            bool _init, _done, _pause;
-
-            size_t _frameCounter, _renderPeriod, _desiredFPS;
+    namespace control {
+        class RigidBodyCtr : public AbstractControl<bodies::RigidBody> {
         };
-    } // namespace graphics
+    } // namespace control
+
 } // namespace beautiful_bullet
 
-#endif // BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#endif // BEAUTIFULBULLET_CONTROL_RIGIDBODY_H

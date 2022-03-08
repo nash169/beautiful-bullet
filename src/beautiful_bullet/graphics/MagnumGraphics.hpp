@@ -1,5 +1,29 @@
-#ifndef BEAUTIFUL_BULLET_GRAPHICS_MAGNUM_GRAPHICS_HPP
-#define BEAUTIFUL_BULLET_GRAPHICS_MAGNUM_GRAPHICS_HPP
+/*
+    This file is part of beautiful-bullet.
+
+    Copyright (c) 2021, 2022 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+#ifndef BEAUTIFULBULLET_GRAPHICS_MAGNUMGRAPHICS_HPP
+#define BEAUTIFULBULLET_GRAPHICS_MAGNUMGRAPHICS_HPP
 
 #include <iostream>
 #include <memory>
@@ -9,16 +33,16 @@
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
 
-#include <magnum_dynamics/MagnumApp.hpp>
-#include <magnum_dynamics/tools/helper.hpp>
+#include <graphics_lib/Graphics.hpp>
+#include <graphics_lib/tools/helper.hpp>
 
 #include "beautiful_bullet/Simulator.hpp"
 #include "beautiful_bullet/graphics/AbstractGraphics.hpp"
 
+using namespace graphics_lib;
+
 namespace beautiful_bullet {
     namespace graphics {
-        using namespace magnum_dynamics;
-
         class MagnumGraphics : public AbstractGraphics {
         public:
             MagnumGraphics() : AbstractGraphics()
@@ -26,7 +50,7 @@ namespace beautiful_bullet {
                 int argc = 0;
                 char** argv = NULL;
 
-                _app = std::unique_ptr<MagnumApp>(new MagnumApp({argc, argv}));
+                _app = std::unique_ptr<Graphics>(new Graphics({argc, argv}));
 
                 _done = false;
             }
@@ -34,7 +58,7 @@ namespace beautiful_bullet {
             bool init(Simulator& simulator) override
             {
                 // Set camera pose
-                _app->camera()->setPose({6., 0., 2.});
+                _app->camera3D().setPose(Vector3{6., 0., 2.});
 
                 // Add objects to graphics
                 for (auto& object : simulator.objects()) {
@@ -44,7 +68,7 @@ namespace beautiful_bullet {
                     pose.setOrigin(object.body()->getCenterOfMassPosition());
                     pose.setRotation(object.body()->getOrientation());
 
-                    if (object.type() == ObjectType::BOX) {
+                    if (object.type() == bodies::BodyType::BOX) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cube")
                                 .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(object.body()->getCollisionShape())->getHalfExtentsWithMargin())))
@@ -54,45 +78,45 @@ namespace beautiful_bullet {
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == ObjectType::SPHERE) {
+                    else if (object.type() == bodies::BodyType::SPHERE) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("sphere")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<SphereParams&>(object.params()).radius,
-                                            static_cast<SphereParams&>(object.params()).radius,
-                                            static_cast<SphereParams&>(object.params()).radius)))
+                                            static_cast<bodies::SphereParams&>(object.params()).radius,
+                                            static_cast<bodies::SphereParams&>(object.params()).radius,
+                                            static_cast<bodies::SphereParams&>(object.params()).radius)))
                                 .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == ObjectType::CYLINDER) {
+                    else if (object.type() == bodies::BodyType::CYLINDER) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cylinder")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<CylinderParams&>(object.params()).radius2,
-                                            static_cast<CylinderParams&>(object.params()).height,
-                                            static_cast<CylinderParams&>(object.params()).radius1)))
+                                            static_cast<bodies::CylinderParams&>(object.params()).radius2,
+                                            static_cast<bodies::CylinderParams&>(object.params()).height,
+                                            static_cast<bodies::CylinderParams&>(object.params()).radius1)))
                                 .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
                         object.body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == ObjectType::CAPSULE) {
+                    else if (object.type() == bodies::BodyType::CAPSULE) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("capsule")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<CapsuleParams&>(object.params()).radius,
-                                            static_cast<CapsuleParams&>(object.params()).radius,
-                                            static_cast<CapsuleParams&>(object.params()).height)))
+                                            static_cast<bodies::CapsuleParams&>(object.params()).radius,
+                                            static_cast<bodies::CapsuleParams&>(object.params()).radius,
+                                            static_cast<bodies::CapsuleParams&>(object.params()).height)))
                                 .setColor(tools::color(object.params().color))
                                 .setTransformation(Matrix4(pose))};
 
@@ -130,58 +154,13 @@ namespace beautiful_bullet {
 
         protected:
             // Magnum-Dynamics application
-            std::unique_ptr<MagnumApp> _app;
+            std::unique_ptr<Graphics> _app;
 
             // for multibody
-            std::unordered_map<magnum_dynamics::Object*, btTransform*> _mapTransform;
+            std::unordered_map<objects::ObjectHandle3D*, btTransform*> _mapTransform;
 
             bool createVisualRecursive(const urdf::ModelInterface* model, const urdf::Link* node, btMultiBody* multibody, const std::string& path, int index = -1)
             {
-                // for (auto& collision : node->collision_array) {
-                //     // Collision
-                //     btTransform transformCollision = linkFrames(collision.get());
-
-                //     switch (collision->geometry->type) {
-                //     case urdf::Geometry::SPHERE: {
-                //         urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
-                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     case urdf::Geometry::BOX: {
-                //         urdf::Box* box = dynamic_cast<urdf::Box*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
-                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     case urdf::Geometry::CYLINDER: {
-                //         urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
-                //                                                            .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     case urdf::Geometry::MESH: {
-                //         urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(collision->geometry.get());
-
-                //         auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename).addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformCollision) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))),
-                //             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
-
-                //         break;
-                //     }
-                //     default:
-                //         return false;
-                //     }
-                // }
-
                 for (auto& visual : node->visual_array) {
                     // Origin
                     btTransform transformVisual = linkFrames(visual.get());
@@ -234,6 +213,61 @@ namespace beautiful_bullet {
 
                 for (std::size_t i = 0; i < node->child_links.size(); ++i) {
                     if (!createVisualRecursive(model, node->child_links[i].get(), multibody, path, index + 1 + i))
+                        return false;
+                }
+
+                return true;
+            }
+
+            bool createCollisionRecursive(const urdf::ModelInterface* model, const urdf::Link* node, btMultiBody* multibody, const std::string& path, int index = -1)
+            {
+                for (auto& collision : node->collision_array) {
+                    // Collision
+                    btTransform transformCollision = linkFrames(collision.get());
+
+                    switch (collision->geometry->type) {
+                    case urdf::Geometry::SPHERE: {
+                        urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
+                                                                           .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    case urdf::Geometry::BOX: {
+                        urdf::Box* box = dynamic_cast<urdf::Box*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
+                                                                           .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    case urdf::Geometry::CYLINDER: {
+                        urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
+                                                                           .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    case urdf::Geometry::MESH: {
+                        urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(collision->geometry.get());
+
+                        auto it = _mapTransform.insert(std::make_pair(&_app->import(path + mesh->filename).addPriorTransformation(Matrix4(inertiaFrame(node).inverse()) * Matrix4(transformCollision) * Matrix4::scaling(Vector3(mesh->scale.x, mesh->scale.y, mesh->scale.z))),
+                            (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
+
+                        break;
+                    }
+                    default:
+                        return false;
+                    }
+                }
+
+                for (std::size_t i = 0; i < node->child_links.size(); ++i) {
+                    if (!createCollisionRecursive(model, node->child_links[i].get(), multibody, path, index + 1 + i))
                         return false;
                 }
 
@@ -302,4 +336,4 @@ namespace beautiful_bullet {
     } // namespace graphics
 } // namespace beautiful_bullet
 
-#endif // BEAUTIFUL_BULLET_GRAPHICS_MAGNUM_GRAPHICS_HPP
+#endif // BEAUTIFULBULLET_GRAPHICS_MAGNUMGRAPHICS_HPP

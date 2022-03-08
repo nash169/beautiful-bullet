@@ -1,4 +1,26 @@
-#include <iostream>
+/*
+    This file is part of beautiful-bullet.
+
+    Copyright (c) 2021, 2022 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
 
 #include <beautiful_bullet/Simulator.hpp>
 
@@ -7,57 +29,78 @@
 #endif
 
 #include <control_lib/controllers/Feedback.hpp>
-
-#include <CommonInterfaces/CommonGUIHelperInterface.h>
-#include <ExampleBrowser/OpenGLGuiHelper.h>
-#include <Importers/ImportURDFDemo/BulletUrdfImporter.h>
-#include <Importers/ImportURDFDemo/MyMultiBodyCreator.h>
-#include <Importers/ImportURDFDemo/URDF2Bullet.h>
-#include <OpenGLWindow/SimpleOpenGL3App.h>
+#include <control_lib/controllers/LinearDynamics.hpp>
 
 using namespace beautiful_bullet;
 using namespace control_lib;
 
-class ArmConfigurationControl : public Control {
+struct Params {
+    struct controller : public defaults::controller {
+    };
+
+    struct feedback : public defaults::feedback {
+    };
+
+    struct linear_dynamics : public defaults::linear_dynamics {
+    };
+};
+
+class OperationSpaceCtr : public control::MultiBodyCtr {
 public:
-    ArmConfigurationControl() : Control(ControlMode::CONFIGURATIONSPACE) {}
-
-    // ~ArmConfigurationControl() { delete _controller; }
-
-    void init() override
+    OperationSpaceCtr() : control::MultiBodyCtr(ControlMode::OPERATIONSPACE)
     {
-        // Space dimension
-        _dim = 7;
+        // step
+        _dt = 0.01;
 
-        // Init your controller
-        _controller = std::make_shared<controllers::Feedback>(ControlSpace::LINEAR, _dim, _dim, 0.01);
+        // set controlled frame
+        _frame = "lbr_iiwa_link_7";
 
-        // Define controller internal paramters
-        Eigen::MatrixXd pGains = 100 * Eigen::MatrixXd::Identity(_dim, _dim),
-                        dGains = 20 * Eigen::MatrixXd::Identity(_dim, _dim);
+        // set controller gains
+        Eigen::MatrixXd D = 1 * Eigen::MatrixXd::Identity(6, 6);
+        _controller.setDamping(D);
 
-        pGains(5, 5) = 10;
-        pGains(6, 6) = 5;
-        dGains(5, 5) = 2;
-        dGains(6, 6) = 1;
+        // set ds gains
+        Eigen::MatrixXd A = 0.1 * Eigen::MatrixXd::Identity(6, 6);
+        _ds.setDynamicsMatrix(A);
 
-        _controller->setGains("p", pGains);
-        _controller->setGains("d", dGains);
+        // goal
+        Eigen::Vector3d xDes(0.365308, -0.0810892, 1.13717);
+        Eigen::Matrix3d oDes;
+        oDes << 0.591427, -0.62603, 0.508233,
+            0.689044, 0.719749, 0.0847368,
+            -0.418848, 0.300079, 0.857041;
+        _sDes._trans = xDes;
+        _sDes._rot = oDes;
 
-        // Set reference
-        Eigen::VectorXd target = Eigen::VectorXd::Zero(2 * _dim);
-        target.head(_dim) << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
-        _controller->setReference(target);
+        // set reference
+        _ds.setReference(spatial::SE3(oDes, xDes));
     }
 
-    Eigen::VectorXd update(const Eigen::VectorXd& state) override { return _controller->update(state); }
+    Eigen::VectorXd action(bodies::MultiBody& body) override
+    {
+        // current state
+        spatial::SE3 sCurr(body.framePose(_frame));
+        sCurr._vel = body.frameVelocity(_frame);
+
+        // reference state
+        spatial::SE3 sRef;
+        sRef._vel = _ds.action(sCurr);
+
+        return _controller.setReference(sRef).action(sCurr);
+    }
 
 protected:
-    // Controller
-    std::shared_ptr<controllers::Feedback> _controller;
+    // step
+    double _dt;
 
-    // Space dimension
-    size_t _dim;
+    // reference DS
+    spatial::SE3 _sDes;
+
+    // ds
+    controllers::LinearDynamics<Params, spatial::SE3> _ds;
+
+    // controller
+    controllers::Feedback<Params, spatial::SE3> _controller;
 };
 
 int main(int argc, char const* argv[])
@@ -73,23 +116,20 @@ int main(int argc, char const* argv[])
     // Add ground
     simulator.addGround();
 
-    // Create agent
-    Agent iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf");
+    // Multi Bodies
+    bodies::MultiBody iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf");
 
-    // Set agents pose
-    iiwaBullet.setPosition(0, -1, 0);
-    iiwa.setPosition(0, 1, 0);
-
-    // Set agents state
     Eigen::VectorXd state(7);
     state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
-    iiwaBullet.setState(state);
 
-    // Add controllers
-    iiwa.addControllers(std::make_unique<ArmConfigurationControl>());
-
-    // Add agent to simulator
-    simulator.addAgents(iiwaBullet, iiwa);
+    // Add bodies to simulation
+    simulator.add(
+        iiwaBullet.setPosition(0, -1, 0)
+            .addControllers(std::make_unique<OperationSpaceCtr>())
+            .activateGravity(),
+        iiwa.setState(state)
+            .setPosition(0, 1, 0)
+            .activateGravity());
 
     // Run simulation
     simulator.run();

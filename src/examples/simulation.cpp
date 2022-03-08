@@ -1,3 +1,27 @@
+/*
+    This file is part of beautiful-bullet.
+
+    Copyright (c) 2021, 2022 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
 #include <iostream>
 
 #include <beautiful_bullet/Simulator.hpp>
@@ -21,40 +45,30 @@ int main(int argc, char** argv)
     // Add ground
     simulator.addGround();
 
-    // Objects params
-    BoxParams paramsBox;
-    paramsBox.setSize(0.5, 0.5, 0.5)
-        .setMass(0.1)
-        .setFriction(0.5)
-        .setColor("red");
+    // RigidBodies params
+    bodies::BoxParams paramsBox;
+    paramsBox.setSize(0.5, 0.5, 0.5).setMass(0.1).setFriction(0.5).setColor("red");
 
-    SphereParams paramsSphere;
-    paramsSphere.setRadius(0.5)
-        .setMass(0.1)
-        .setFriction(0.5)
-        .setColor("green");
+    bodies::SphereParams paramsSphere;
+    paramsSphere.setRadius(0.5).setMass(0.1).setFriction(0.5).setColor("green");
 
-    // Create objects
-    Object box("box", paramsBox), sphere("sphere", paramsSphere);
+    // Create RigidBodies
+    bodies::RigidBody box("box", paramsBox), sphere("sphere", paramsSphere);
 
-    // Add object to simulator
-    simulator.addObjects(box.setPosition(0, 2, 10),
-        sphere.setPosition(0, -2, 10));
-
-    // Create agent
-    Agent iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf"), franka("models/franka/urdf/panda.urdf");
-
-    // Set agents pose
-    iiwaBullet.setPosition(2, -2, 0);
-    iiwa.setPosition(2, 2, 0);
-
-    // Set agents state
+    // MultiBodies params
     Eigen::VectorXd state(7);
     state << 0, 0.2, 0, 0, 0, 0, 0;
-    iiwaBullet.setState(state);
 
-    // Add agent to simulator
-    simulator.addAgents(iiwaBullet, iiwa, franka);
+    // Create agent
+    bodies::MultiBody iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf"), franka("models/franka/urdf/panda.urdf");
+
+    // Add objects to simulator
+    simulator.add(
+        box.setPosition(0, 2, 10),
+        sphere.setPosition(0, -2, 10),
+        iiwaBullet.setPosition(2, -2, 0).setState(state),
+        iiwa.setPosition(2, 2, 0),
+        franka.activateGravity());
 
     // Run simulation
     simulator.run();

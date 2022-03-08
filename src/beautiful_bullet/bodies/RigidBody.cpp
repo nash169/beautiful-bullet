@@ -1,22 +1,37 @@
-#ifndef BEAUTIFUL_BULLET_OBJECT_HPP
-#define BEAUTIFUL_BULLET_OBJECT_HPP
+/*
+    This file is part of beautiful-bullet.
 
-#include <memory>
+    Copyright (c) 2021, 2022 Bernardo Fichera <bernardo.fichera@gmail.com>
 
-#include "beautiful_bullet/Control.hpp"
-#include "beautiful_bullet/Types.hpp"
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-#include <BulletCollision/btBulletCollisionCommon.h>
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+#include "beautiful_bullet/bodies/RigidBody.hpp"
 
 namespace beautiful_bullet {
-    class Object {
-    public:
+    namespace bodies {
         // Constructor
-        Object(const std::string& shape, const ObjectParams& params)
+        RigidBody::RigidBody(const std::string& shape, const BodyParams& params)
         {
             if (!shape.compare("box")) {
                 /* Set box type */
-                _type = ObjectType::BOX;
+                _type = BodyType::BOX;
 
                 /* Set params */
                 _params = std::make_unique<BoxParams>(static_cast<const BoxParams&>(params));
@@ -35,7 +50,7 @@ namespace beautiful_bullet {
 
                 if (!shape.compare("sphere")) {
                     /* Set sphere type */
-                    _type = ObjectType::SPHERE;
+                    _type = BodyType::SPHERE;
 
                     /* Set params */
                     _params = std::make_unique<SphereParams>(static_cast<const SphereParams&>(params));
@@ -45,7 +60,7 @@ namespace beautiful_bullet {
                 }
                 else if (!shape.compare("cylinder")) {
                     /* Set cylinder type */
-                    _type = ObjectType::CYLINDER;
+                    _type = BodyType::CYLINDER;
 
                     /* Set params */
                     _params = std::make_unique<CylinderParams>(static_cast<const CylinderParams&>(params));
@@ -56,7 +71,7 @@ namespace beautiful_bullet {
                 }
                 else if (!shape.compare("capsule")) {
                     /* Set cylinder type */
-                    _type = ObjectType::CAPSULE;
+                    _type = BodyType::CAPSULE;
 
                     /* Set params */
                     _params = std::make_unique<CapsuleParams>(static_cast<const CapsuleParams&>(params));
@@ -84,13 +99,13 @@ namespace beautiful_bullet {
                 // Set friction
                 _body->setFriction(params.friction);
             }
+
+            // Default no gravity compensation
+            _gravity = false;
         }
 
-        // Default constructor
-        Object() = default;
-
         // Move constructor
-        Object(Object&& other) noexcept
+        RigidBody::RigidBody(RigidBody&& other) noexcept
         {
             // Move RigidBody pointer
             _body = other._body;
@@ -98,6 +113,7 @@ namespace beautiful_bullet {
 
             // Move (copy) object type
             _type = other._type;
+            _gravity = other._gravity;
 
             // Move params
             _params = std::move(other._params);
@@ -111,10 +127,7 @@ namespace beautiful_bullet {
             other._controllers.shrink_to_fit();
         }
 
-        // No copy constructor (check explicit and default)
-        Object(const Object&) = delete; // it might not work just because I'm with clang
-
-        ~Object()
+        RigidBody::~RigidBody()
         {
             // Clear controllers
             _controllers.clear();
@@ -122,16 +135,16 @@ namespace beautiful_bullet {
         }
 
         /* Get object params */
-        ObjectParams& params() { return *_params.get(); }
+        BodyParams& RigidBody::params() { return *_params.get(); }
 
         /* Get type */
-        const ObjectType& type() const { return _type; }
+        const BodyType& RigidBody::type() const { return _type; }
 
         /* Get body pointer */
-        btRigidBody* body() { return _body; }
+        btRigidBody* RigidBody::body() { return _body; }
 
         /* Set pose */
-        Object& setPosition(const double& x, const double& y, const double& z)
+        RigidBody& RigidBody::setPosition(const double& x, const double& y, const double& z)
         {
             btTransform transformation = _body->getCenterOfMassTransform();
             transformation.setOrigin(btVector3(x, y, z));
@@ -141,13 +154,8 @@ namespace beautiful_bullet {
         }
 
         /* Set Orientation */
-        Object& setOrientation(const double& roll, const double& pitch, const double& yaw) // here decide what to pass
+        RigidBody& RigidBody::setOrientation(const double& roll, const double& pitch, const double& yaw) // here decide what to pass
         {
-            // Get quaternion from Eigen
-            // Eigen::Quaterniond q = Eigen::AngleAxisf(roll, Eigen::Vector3d::UnitX())
-            //     * Eigen::AngleAxisf(pitch, Eigen::Vector3d::UnitY())
-            //     * Eigen::AngleAxisf(yaw, Eigen::Vector3d::UnitZ());
-
             btTransform transformation = _body->getCenterOfMassTransform();
             transformation.setRotation(btQuaternion(yaw, pitch, roll));
             _body->setCenterOfMassTransform(transformation);
@@ -155,21 +163,20 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        // ObjectParams& setRotation(const btScalar& angle, const Eigen::Vector3d& axis)
-        // {
-        //     transform.setRotation(btQuaternion(btVector3(axis(0), axis(1), axis(2)), angle));
-        //     return *this;
-        // }
+        RigidBody& RigidBody::activateGravity()
+        {
+            _gravity = true;
+            return *this;
+        }
 
-        /* Add controllers */
         template <typename... Args>
-        Object& addControllers(std::unique_ptr<Control> controller, Args... args)
+        RigidBody& RigidBody::addControllers(std::unique_ptr<control::RigidBodyCtr> controller, Args... args)
         {
             // Add controller
             _controllers.push_back(std::move(controller));
 
             // Init controller
-            _controllers.back()->init();
+            // _controllers.back()->init();
 
             if constexpr (sizeof...(args) > 0)
                 addControllers(args...);
@@ -177,32 +184,30 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        // Update model
-        void update() {}
+        void RigidBody::update()
+        {
+            // Vector of applied forces
+            Eigen::Matrix<double, 6, 1> f = Eigen::VectorXd::Zero(6);
 
-    protected:
-        // Bullet rigid body
-        btRigidBody* _body = nullptr;
+            // Gravity compenstation
+            if (_gravity)
+                f(2) += 9.81 / _body->getInvMass();
 
-        // Object type
-        ObjectType _type;
+            // Controllers
+            for (auto& controller : _controllers)
+                f += controller->action(*this);
 
-        // Object params (still shared for problems in moving the object with unique_ptr)
-        // Pointer in order to avoid object slicing
-        // https://stackoverflow.com/questions/8777724/store-derived-class-objects-in-base-class-variables
-        // https://stackoverflow.com/questions/1541031/is-it-possible-for-slicing-to-occur-with-smart-pointers
-        std::unique_ptr<ObjectParams> _params;
+            // Apply forces
+            _body->applyCentralForce(btVector3(f(0), f(1), f(2)));
+            _body->applyTorque(btVector3(f(3), f(4), f(5)));
+        }
 
-        // Controllers (for now shared because of issues in moving the agent object)
-        std::vector<std::unique_ptr<Control>> _controllers;
-
-        // Create Rigid Body
-        btRigidBody* createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)
+        btRigidBody* RigidBody::createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape)
         {
             // Assert shape
             btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
 
-            //rigidbody is dynamic if and only if mass is non zero, otherwise static
+            // rigidbody is dynamic if and only if mass is non zero, otherwise static
             bool isDynamic = (mass != 0.f);
 
             // Calculate inertia
@@ -221,7 +226,5 @@ namespace beautiful_bullet {
 
             return body;
         }
-    }; // namespace robot_raisim
+    } // namespace bodies
 } // namespace beautiful_bullet
-
-#endif // BEAUTIFUL_BULLET_OBJECT_HPP

@@ -1,5 +1,29 @@
-#ifndef BEAUTIFUL_BULLET_SIMULATOR_HPP
-#define BEAUTIFUL_BULLET_SIMULATOR_HPP
+/*
+    This file is part of beautiful-bullet.
+
+    Copyright (c) 2021, 2022 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+#ifndef BEAUTIFULBULLET_SIMULATOR_HPP
+#define BEAUTIFULBULLET_SIMULATOR_HPP
 
 #include <cmath>
 #include <memory>
@@ -17,8 +41,8 @@
 
 #include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
 
-#include "beautiful_bullet/Agent.hpp"
-#include "beautiful_bullet/Object.hpp"
+#include "beautiful_bullet/bodies/MultiBody.hpp"
+#include "beautiful_bullet/bodies/RigidBody.hpp"
 #include "beautiful_bullet/graphics/AbstractGraphics.hpp"
 
 namespace beautiful_bullet {
@@ -125,12 +149,12 @@ namespace beautiful_bullet {
             _collisionShapes.clear();
 
             // Clears agents
-            _agents.clear();
-            _agents.shrink_to_fit();
+            _multiBody.clear();
+            _multiBody.shrink_to_fit();
 
             // Clear object
-            _objects.clear();
-            _objects.shrink_to_fit();
+            _rigidBody.clear();
+            _rigidBody.shrink_to_fit();
 
             // Delete MultibodyDynamicsWorld
             delete _world;
@@ -165,10 +189,10 @@ namespace beautiful_bullet {
         btMultiBodyDynamicsWorld* world() { return _world; }
 
         /* Get agents */
-        std::vector<Agent>& agents() { return _agents; }
+        std::vector<bodies::MultiBody>& agents() { return _multiBody; }
 
         /* Get objects */
-        std::vector<Object>& objects() { return _objects; }
+        std::vector<bodies::RigidBody>& objects() { return _rigidBody; }
 
         /* Set graphics */
         Simulator& setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
@@ -182,76 +206,70 @@ namespace beautiful_bullet {
         Simulator& addGround()
         {
             // Ground parameters
-            BoxParams params;
+            bodies::BoxParams params;
             params.setSize(4, 4, 0.5)
                 .setMass(0)
                 .setFriction(0.5);
 
-            return addObjects(Object("box", params).setPosition(0, 0, -0.5));
+            return add(bodies::RigidBody("box", params).setPosition(0, 0, -0.5));
         }
 
-        /* Add (rigidbody) object into the simulation */
-        template <typename... Args>
-        Simulator& addObjects(Object& object, Args&... args) // move the agent
+        /* Add bodies into the simulation */
+        template <typename Body, typename... Args>
+        Simulator& add(Body& body, Args&... args) // move the agent
         {
-            // Move object
-            _objects.push_back(std::move(object));
+            if constexpr (std::is_same_v<Body, bodies::RigidBody>) {
+                // Move object
+                _rigidBody.push_back(std::move(body));
 
-            // Add rigid body
-            _world->addRigidBody(_objects.back().body());
+                // Add rigid body
+                _world->addRigidBody(_rigidBody.back().body());
 
-            // Add collision shape
-            _collisionShapes.push_back(_objects.back().body()->getCollisionShape());
+                // Add collision shape
+                _collisionShapes.push_back(_rigidBody.back().body()->getCollisionShape());
+            }
+            else if constexpr (std::is_same_v<Body, bodies::MultiBody>) {
+                std::cout << "Hello2" << std::endl;
+                // Move agent inside simulator
+                _multiBody.push_back(std::move(body)); // it does not seem to be working
 
-            if constexpr (sizeof...(args) > 0)
-                addObjects(args...);
+                for (int i = -1; i < _multiBody.back().body()->getNumLinks(); i++) {
+                    if (i >= 0) {
+                        // Add joint constraints to the world
+                        if (_multiBody.back().body()->getLink(i).m_jointType == btMultibodyLink::eRevolute || _multiBody.back().body()->getLink(i).m_jointType == btMultibodyLink::ePrismatic)
+                            if (_multiBody.back().body()->getLink(i).m_jointLowerLimit <= _multiBody.back().body()->getLink(i).m_jointUpperLimit) {
+                                btMultiBodyConstraint* constraint = new btMultiBodyJointLimitConstraint(_multiBody.back().body(), i, _multiBody.back().body()->getLink(i).m_jointLowerLimit, _multiBody.back().body()->getLink(i).m_jointUpperLimit);
+                                _world->addMultiBodyConstraint(constraint);
+                            }
 
-            return *this;
-        }
+                        // Add collision object to the world
+                        bool isDynamic = (i == -1 && _multiBody.back().body()->hasFixedBase()) ? false : true;
+                        int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
+                            collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
-        /* Add (multibody) agent into the simulation */
-        template <typename... Args>
-        Simulator& addAgents(Agent& agent, Args&... args) // move the agent
-        {
-            // Move agent inside simulator
-            _agents.push_back(std::move(agent)); // it does not seem to be working
+                        _world->addCollisionObject(_multiBody.back().body()->getLinkCollider(i), collisionFilterGroup, collisionFilterMask);
 
-            for (int i = -1; i < _agents.back().body()->getNumLinks(); i++) {
-                if (i >= 0) {
-                    // Add joint constraints to the world
-                    if (_agents.back().body()->getLink(i).m_jointType == btMultibodyLink::eRevolute || _agents.back().body()->getLink(i).m_jointType == btMultibodyLink::ePrismatic)
-                        if (_agents.back().body()->getLink(i).m_jointLowerLimit <= _agents.back().body()->getLink(i).m_jointUpperLimit) {
-                            btMultiBodyConstraint* constraint = new btMultiBodyJointLimitConstraint(_agents.back().body(), i, _agents.back().body()->getLink(i).m_jointLowerLimit, _agents.back().body()->getLink(i).m_jointUpperLimit);
-                            _world->addMultiBodyConstraint(constraint);
-                        }
+                        // Add collision shape
+                        _collisionShapes.push_back(_multiBody.back().body()->getLinkCollider(i)->getCollisionShape());
+                    }
+                    else {
+                        // Add collision object to the world
+                        bool isDynamic = (i == -1 && _multiBody.back().body()->hasFixedBase()) ? false : true;
+                        int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
+                            collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
-                    // Add collision object to the world
-                    bool isDynamic = (i == -1 && _agents.back().body()->hasFixedBase()) ? false : true;
-                    int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
-                        collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
+                        _world->addCollisionObject(_multiBody.back().body()->getBaseCollider(), collisionFilterGroup, collisionFilterMask);
 
-                    _world->addCollisionObject(_agents.back().body()->getLinkCollider(i), collisionFilterGroup, collisionFilterMask);
-
-                    // Add collision shape
-                    _collisionShapes.push_back(_agents.back().body()->getLinkCollider(i)->getCollisionShape());
+                        // Add collision shape
+                        _collisionShapes.push_back(_multiBody.back().body()->getBaseCollider()->getCollisionShape());
+                    }
                 }
-                else {
-                    // Add collision object to the world
-                    bool isDynamic = (i == -1 && _agents.back().body()->hasFixedBase()) ? false : true;
-                    int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
-                        collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
-                    _world->addCollisionObject(_agents.back().body()->getBaseCollider(), collisionFilterGroup, collisionFilterMask);
-
-                    // Add collision shape
-                    _collisionShapes.push_back(_agents.back().body()->getBaseCollider()->getCollisionShape());
-                }
+                _world->addMultiBody(_multiBody.back().body());
             }
 
-            _world->addMultiBody(_agents.back().body());
-
             if constexpr (sizeof...(args) > 0)
-                addAgents(args...);
+                add(args...);
 
             return *this;
         }
@@ -267,11 +285,11 @@ namespace beautiful_bullet {
 
             while (runTime < 0 || _clock * _timeStep <= runTime) {
                 // Update objects
-                for (auto& object : _objects)
+                for (auto& object : _rigidBody)
                     object.update();
 
                 // Update agents
-                for (auto& agent : _agents)
+                for (auto& agent : _multiBody)
                     agent.update();
 
                 // Simulation step
@@ -320,12 +338,10 @@ namespace beautiful_bullet {
         /* Ground */
         bool _ground;
 
-        /* Objects */
-        std::vector<Object> _objects;
-
-        /* Agents */
-        std::vector<Agent> _agents;
+        /* Bodies */
+        std::vector<bodies::RigidBody> _rigidBody;
+        std::vector<bodies::MultiBody> _multiBody;
     };
 } // namespace beautiful_bullet
 
-#endif // BEAUTIFUL_BULLET_SIMULATOR_HPP
+#endif // BEAUTIFULBULLET_SIMULATOR_HPP

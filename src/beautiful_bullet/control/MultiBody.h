@@ -22,42 +22,56 @@
     SOFTWARE.
 */
 
-#ifndef BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
-#define BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#ifndef BEAUTIFULBULLET_CONTROL_MULTIBODY_H
+#define BEAUTIFULBULLET_CONTROL_MULTIBODY_H
 
-#include <cstddef>
+#include "beautiful_bullet/control/AbstractControl.hpp"
 
 namespace beautiful_bullet {
-    class Simulator;
+    enum class ControlMode : unsigned int {
+        OPERATIONSPACE = 1 << 0,
+        CONFIGURATIONSPACE = 1 << 1
+    };
 
-    namespace graphics {
-        class AbstractGraphics {
+    namespace bodies {
+        class MultiBody;
+    } // namespace bodies
+
+    namespace control {
+        class MultiBodyCtr : public AbstractControl<bodies::MultiBody> {
         public:
-            AbstractGraphics()
-                : _desiredFPS(40), _frameCounter(0), _init(false), _done(true), _pause(false) {}
+            /* Constructor */
+            MultiBodyCtr(const ControlMode& mode = ControlMode::CONFIGURATIONSPACE) : _mode(mode) {}
 
-            bool done() { return _done; }
+            /* Get control mode */
+            const ControlMode& mode() const { return _mode; }
 
-            bool pause() { return _pause; }
+            /* Get reference link */
+            const std::string& frame() const { return _frame; }
 
-            size_t desiredFPS() { return _desiredFPS; }
-
-            AbstractGraphics& setDesiredFPS(size_t desiredFPS)
+            /* Set control mode */
+            MultiBodyCtr& setMode(const ControlMode& mode)
             {
-                _desiredFPS = desiredFPS;
+                _mode = mode;
                 return *this;
             }
 
-            virtual bool init(Simulator& simulator) { return true; }
-
-            virtual bool refresh() { return true; }
+            /* Set control frame */
+            MultiBodyCtr& setFrame(const std::string& frame)
+            {
+                _frame = frame;
+                return *this;
+            }
 
         protected:
-            bool _init, _done, _pause;
+            // Control mode
+            ControlMode _mode;
 
-            size_t _frameCounter, _renderPeriod, _desiredFPS;
+            // Operational space reference
+            std::string _frame;
         };
-    } // namespace graphics
+    } // namespace control
+
 } // namespace beautiful_bullet
 
-#endif // BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#endif // BEAUTIFULBULLET_CONTROL_MULTIBODY_H

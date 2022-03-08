@@ -22,42 +22,30 @@
     SOFTWARE.
 */
 
-#ifndef BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
-#define BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#ifndef BEAUTIFUL_BULLET_TOOLS_MATH_HPP
+#define BEAUTIFUL_BULLET_TOOLS_MATH_HPP
 
-#include <cstddef>
+#include <Eigen/Geometry>
 
 namespace beautiful_bullet {
-    class Simulator;
+    namespace tools {
+        Eigen::Matrix<double, 6, 1> lieAlgebraSE3(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation)
+        {
+            Eigen::AngleAxisd aa(orientation);
 
-    namespace graphics {
-        class AbstractGraphics {
-        public:
-            AbstractGraphics()
-                : _desiredFPS(40), _frameCounter(0), _init(false), _done(true), _pause(false) {}
+            Eigen::Vector3d omega = aa.angle() * aa.axis();
 
-            bool done() { return _done; }
+            Eigen::Matrix3d omega_skew;
+            omega_skew << 0, -omega(2), omega(1),
+                omega(2), 0, -omega(0),
+                -omega(1), omega(0), 0;
 
-            bool pause() { return _pause; }
+            double theta = omega.norm(), A = std::sin(theta) / theta, B = (1 - std::cos(theta)) / std::pow(theta, 2);
 
-            size_t desiredFPS() { return _desiredFPS; }
+            return (Eigen::Matrix<double, 6, 1>() << (Eigen::Matrix3d::Identity() - 0.5 * omega_skew + (1 - 0.5 * A / B) / std::pow(theta, 2) * omega_skew * omega_skew) * position, omega).finished();
+        }
+    } // namespace tools
 
-            AbstractGraphics& setDesiredFPS(size_t desiredFPS)
-            {
-                _desiredFPS = desiredFPS;
-                return *this;
-            }
-
-            virtual bool init(Simulator& simulator) { return true; }
-
-            virtual bool refresh() { return true; }
-
-        protected:
-            bool _init, _done, _pause;
-
-            size_t _frameCounter, _renderPeriod, _desiredFPS;
-        };
-    } // namespace graphics
 } // namespace beautiful_bullet
 
-#endif // BEAUTIFULBULLET_GRAPHICS_ABSTRACTGRAPHICS_HPP
+#endif // BEAUTIFUL_BULLET_TOOLS_MATH_HPP
