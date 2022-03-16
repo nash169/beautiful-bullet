@@ -229,7 +229,6 @@ namespace beautiful_bullet {
                 _collisionShapes.push_back(_rigidBody.back().body()->getCollisionShape());
             }
             else if constexpr (std::is_same_v<Body, bodies::MultiBody>) {
-                std::cout << "Hello2" << std::endl;
                 // Move agent inside simulator
                 _multiBody.push_back(std::move(body)); // it does not seem to be working
 
