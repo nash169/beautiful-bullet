@@ -25,6 +25,7 @@
 #include "beautiful_bullet/bodies/MultiBody.hpp"
 
 // Pinocchio
+#include <pinocchio/algorithm/aba.hpp>
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
@@ -104,11 +105,38 @@ namespace beautiful_bullet {
             delete _model;
         }
 
-        btMultiBody* MultiBody::body() { return _body; }
+        btMultiBody* MultiBody::body()
+        {
+            return _body;
+        }
 
-        const Eigen::VectorXd& MultiBody::state() { return _q; }
+        const Eigen::VectorXd& MultiBody::state()
+        {
+            return _q;
+        }
 
-        const Eigen::VectorXd& MultiBody::velocity() { return _v; }
+        const Eigen::VectorXd& MultiBody::velocity()
+        {
+            return _v;
+        }
+
+        Eigen::VectorXd MultiBody::acceleration()
+        {
+            // Using pinocchio for the moment to compute the forward dynamics
+            pinocchio::aba(*_model, *_data, state(), velocity(), torques());
+            return _data->ddq;
+        }
+
+        Eigen::VectorXd MultiBody::torques()
+        {
+            // Using Bullet to compute the inverse dynamics
+            Eigen::VectorXd tau(_body->getNumDofs());
+
+            for (size_t i = 0; i < _body->getNumDofs(); i++)
+                tau(i) = _body->getJointTorque(i);
+
+            return tau;
+        }
 
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
         {

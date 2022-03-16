@@ -60,11 +60,17 @@ namespace beautiful_bullet {
             /* Get multibody pointer */
             btMultiBody* body();
 
-            /* Get agent state */
+            /* Get multibody joint state */
             const Eigen::VectorXd& state();
 
-            /* Get agent state derivative */
+            /* Get multibody joint state derivative */
             const Eigen::VectorXd& velocity();
+
+            /* Get multibody joint state second derivative */
+            Eigen::VectorXd acceleration();
+
+            /* Get multibody joint torques */
+            Eigen::VectorXd torques();
 
             /* Get pose of the frame */
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
@@ -81,16 +87,16 @@ namespace beautiful_bullet {
             /* Set multibody */
             MultiBody& setBody(btMultiBody* body);
 
-            /* Set agent (base) position */
+            /* Set multibody (base) position */
             MultiBody& setPosition(const double& x, const double& y, const double& z);
 
-            /* Set agent (base) orientation */
+            /* Set multibody (base) orientation */
             MultiBody& setOrientation(const double& roll, const double& pitch, const double& yaw);
 
-            /* Set agent state */
+            /* Set multibody state */
             MultiBody& setState(const Eigen::VectorXd& q);
 
-            /* Set agent state */
+            /* Set multibody state */
             MultiBody& setVelocity(const Eigen::VectorXd& v);
 
             /* Activate gravity compensation */
