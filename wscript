@@ -67,7 +67,14 @@ def configure(cfg):
     cfg.env.SUFFIX = "dylib" if cfg.env["DEST_OS"] == "darwin" else "so"
 
     # Load compiler configuration and generate clangd flags
-    cfg.load("compiler_cxx clang_compilation_database")
+    try:
+        # 'clang_compilation_database' required for clangd support (waf exe)
+        # Waf project has to compiled with the desired tools
+        # python3 ./waf-light configure build --tools=clang_compilation_database
+        cfg.load("compiler_cxx clang_compilation_database")
+    except:
+        # Standard waf tool for C++ compilation
+        cfg.load("compiler_cxx")
 
     # Define require libraries
     cfg.get_env()["requires"] += ["EIGEN", "BULLET", "ASSIMP",
@@ -84,7 +91,8 @@ def configure(cfg):
             tools[key], "share/waf"))
 
     # Bullet components
-    cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,BulletInverseDynamics,Bullet3Common"
+    # BulletInverseDynamics
+    cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,Bullet3Common"
 
     # Load tools configuration
     cfg.load("flags eigen bullet urdfdom assimp pinocchio", tooldir="waf_tools")
