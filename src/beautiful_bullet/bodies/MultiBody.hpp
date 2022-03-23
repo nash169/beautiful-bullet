@@ -81,6 +81,9 @@ namespace beautiful_bullet {
             /* Get Jacobian */
             Eigen::MatrixXd jacobian(const std::string& frame = "");
 
+            /* Get Hessian (Jacobian time variation precisely) */
+            Eigen::MatrixXd hessian(const std::string& frame = "");
+
             /* Get Bullet loader */
             utils::BulletLoader& loader() { return _loader; }
 

@@ -173,6 +173,22 @@ namespace beautiful_bullet {
             return J;
         }
 
+        Eigen::MatrixXd MultiBody::hessian(const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Init Jacobian
+            pinocchio::Data::Matrix6x H(6, _model->nv);
+            H.setZero();
+
+            // Compute the jacobian
+            pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, _q, _v);
+            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::WORLD, H);
+
+            return H;
+        }
+
         MultiBody& MultiBody::setBody(btMultiBody* body) // (remember to init state here)
         {
             _body = body;
