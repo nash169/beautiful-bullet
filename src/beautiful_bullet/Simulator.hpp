@@ -273,6 +273,20 @@ namespace beautiful_bullet {
             return *this;
         }
 
+        inline void step()
+        {
+            // Update objects
+            for (auto& object : _rigidBody)
+                object.update();
+
+            // Update agents
+            for (auto& agent : _multiBody)
+                agent.update();
+
+            // Simulation step
+            _world->stepSimulation(_timeStep, 0);
+        }
+
         /* Run simulation */
         void run(double runTime = -1)
         {
