@@ -29,7 +29,7 @@ from utils import check_include, check_lib
 
 def options(opt):
     # Required package options
-    opt.load("eigen bullet", tooldir="waf_tools")
+    opt.load("eigen bullet urdfdom assimp pinocchio", tooldir="waf_tools")
 
     # Options
     opt.add_option("--bb-path", type="string",
@@ -48,22 +48,30 @@ def check_beautifulbullet(ctx):
         path_check = [ctx.options.bb_path]
 
     # beautiful-bullet includes
-    check_include(ctx, "BEAUTIFULBULLET", ["beautiful_bullet"], [
-                  "Simulator.hpp"], path_check)
+    check_include(ctx, "BEAUTIFULBULLET", [""], [
+                  "beautiful_bullet/Simulator.hpp"], path_check)
 
     # beautiful-bullet libs
     check_lib(ctx, "BEAUTIFULBULLET", "", ["libBeautifulBullet"], path_check)
 
     if ctx.env.LIB_BEAUTIFULBULLET or ctx.env.STLIB_BEAUTIFULBULLET:
-        # Add dependencies to require libraries
-        ctx.get_env()["requires"] = ctx.get_env()[
-            "requires"] + ["EIGEN", "BULLET"]
+        # Add dependencies to required libraries
+        deps = ["EIGEN", "BULLET", "ASSIMP", "URDFDOM", "PINOCCHIO"]
+        ctx.get_env()["requires"] += deps
+
+        # Bullet options
+        ctx.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,Bullet3Common"
 
         # Check for dependencies
-        ctx.load("eigen bullet", tooldir="waf_tools")
+        ctx.load("eigen bullet urdfdom assimp pinocchio", tooldir="waf_tools")
+
+        # Add dependencies to used libraries
+        for dep in deps:
+            if dep not in ctx.get_env()["libs"]:
+                ctx.get_env()["libs"] += [dep]
 
         # Add library
-        ctx.get_env()["libs"] = ctx.get_env()["libs"] + ["BEAUTIFULBULLET"]
+        ctx.get_env()["libs"] += ["BEAUTIFULBULLET"]
 
 
 def configure(cfg):
