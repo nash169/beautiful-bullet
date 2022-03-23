@@ -294,6 +294,9 @@ namespace beautiful_bullet {
             _clock = 0;
 
             // Init graphics
+            if (!_graphics)
+                _graphics = std::make_unique<graphics::AbstractGraphics>();
+
             _graphics->init(*this);
 
             while (runTime < 0 || _clock * _timeStep <= runTime) {
