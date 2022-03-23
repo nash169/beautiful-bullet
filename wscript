@@ -77,13 +77,8 @@ def configure(cfg):
         cfg.load("compiler_cxx")
 
     # Define require libraries
-    cfg.get_env()["requires"] += ["EIGEN", "BULLET", "ASSIMP",
-                                  "URDFDOM", "PINOCCHIO"]  # MAGNUMDYNAMICS, UTILSCPP, CONTROL
-
-    # Optionally add Pinocchio to the required libraries
-    # if cfg.options.with_pinocchio:
-    #     cfg.get_env()["requires"] += ["PINOCCHIO"]
-    #     cfg.env["DEFINES"] += ["USE_PINOCCHIO"]
+    cfg.get_env()["requires"] += ["EIGEN", "BULLET",
+                                  "ASSIMP", "URDFDOM", "PINOCCHIO"]
 
     # Load personal tools configurations
     for key in tools:

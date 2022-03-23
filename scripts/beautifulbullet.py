@@ -35,9 +35,6 @@ def options(opt):
     opt.add_option("--bb-path", type="string",
                    help="Path to Beautiful Bullet.", dest="bb_path")
 
-    opt.add_option("--bb-pinocchio", action="store_true",
-                   help="Activate Pinocchio support.", dest="bb_pinocchio")
-
 
 @conf
 def check_beautifulbullet(ctx):
