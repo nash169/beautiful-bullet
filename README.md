@@ -60,9 +60,9 @@ If you want to make a clean installation
 #### Compilation options
 In order to set the desired compiler define the environment variable CXX=<g++,clang++,icpc> (gnu, clang and intel compiler respectively).
 
-It is highly recommended to compile with AVX support
+Compile in debug mode (without AVX support)
 ```sh
-waf (./waf) configure --release
+waf (./waf) configure --debug
 ```
 Compile static library (default option)
 ```sh
