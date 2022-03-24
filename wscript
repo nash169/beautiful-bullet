@@ -58,9 +58,6 @@ def options(opt):
     opt.add_option("--static", action="store_true",
                    help="Build static library.")
 
-    # opt.add_option("--with-pinocchio", action="store_true",
-    #                help="Compile Beautiful Bullet with Pinocchio support.", dest="with_pinocchio")
-
 
 def configure(cfg):
     # OSX/Mac uses .dylib and GNU/Linux .so

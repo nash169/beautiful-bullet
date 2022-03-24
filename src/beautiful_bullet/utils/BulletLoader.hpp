@@ -37,9 +37,9 @@
 
 // urdfdom
 #include <urdf_parser/urdf_parser.h>
-// #include <urdf_world/world.h>
 
-// robot bullet
+// beautiful bullet
+#include "beautiful_bullet/tools/msg.hpp"
 #include "beautiful_bullet/utils/LoadFlags.hpp"
 #include "beautiful_bullet/utils/MeshShape.hpp"
 
@@ -110,7 +110,7 @@ namespace beautiful_bullet {
                 btVector3 inertiaDiag(0, 0, 0);
 
                 if (root->name == "world") {
-                    std::cout << "World link present: move forward one link" << std::endl;
+                    DEBUG_MSG("World link present: move forward one link");
 
                     // Subtract world link to the number robot's link
                     numLinks -= 1;
@@ -140,7 +140,7 @@ namespace beautiful_bullet {
 
                 // Recursively create the nodes
                 if (!createMultiBodyRecursive(multibody, root)) {
-                    std::cout << "error" << std::endl;
+                    std::cerr << "error" << std::endl;
                     return nullptr;
                 }
 
@@ -161,18 +161,18 @@ namespace beautiful_bullet {
 
             bool createMultiBodyRecursive(btMultiBody* multibody, const urdf::Link* node, int index = -1, int parentIndex = -2)
             {
-                std::cout << node->name << std::endl;
-                std::cout << "Setting link: " << index << " Parent link: " << parentIndex << std::endl;
+                DEBUG_MSG(node->name);
+                DEBUG_MSG("Setting link: " << index << " Parent link: " << parentIndex);
 
                 // Create collision shape
-                std::cout << "Creating node shape..." << std::endl;
+                DEBUG_MSG("Creating node shape...");
                 if (!createNodeShapes(multibody, node, index)) {
                     return false;
                 }
 
                 // If not base link create connection
                 if (index >= 0) {
-                    std::cout << "Creating connection..." << std::endl;
+                    DEBUG_MSG("Creating connection...");
                     if (!createJointNodeConnection(multibody, node, index, parentIndex))
                         return false;
                 }
@@ -245,32 +245,33 @@ namespace beautiful_bullet {
                 // Create joint
                 switch (joint->type) {
                 case urdf::Joint::PLANAR:
+                    DEBUG_MSG("Setting planar joint...");
                     multibody->setupPlanar(index, mass, inertiaDiag, parentIndex, parentRotToThis, quatRotate(offsetInB.getRotation(), jointAxis), offsetInA.getOrigin(), disableParentCollision);
                     break;
 
                 case urdf::Joint::FLOATING:
-                    std::cout << "Floating not supported." << std::endl;
+                    std::cerr << "Floating not supported." << std::endl;
                     break;
 
                 case urdf::Joint::REVOLUTE: {
-                    std::cout << "Setting revolute joint..." << std::endl;
+                    DEBUG_MSG("Setting revolute joint...");
                     multibody->setupRevolute(index, mass, inertiaDiag, parentIndex,
                         parentRotToThis, quatRotate(offsetInB.getRotation(), jointAxis), offsetInA.getOrigin(), -offsetInB.getOrigin(), disableParentCollision);
                     break;
                 }
                 case urdf::Joint::CONTINUOUS: {
-                    std::cout << "Setting continuous joint..." << std::endl;
+                    DEBUG_MSG("Setting continuous joint...");
                     multibody->setupSpherical(index, mass, inertiaDiag, parentIndex, parentRotToThis, offsetInA.getOrigin(), -offsetInB.getOrigin(), disableParentCollision);
                     break;
                 }
                 case urdf::Joint::PRISMATIC:
-                    std::cout << "Setting prismatic joint..." << std::endl;
+                    DEBUG_MSG("Setting prismatic joint...");
                     multibody->setupPrismatic(index, mass, inertiaDiag, parentIndex,
                         parentRotToThis, quatRotate(offsetInB.getRotation(), jointAxis), offsetInA.getOrigin(), -offsetInB.getOrigin(), disableParentCollision);
                     break;
 
                 case urdf::Joint::FIXED: {
-                    std::cout << "Setting fixed joint..." << std::endl;
+                    DEBUG_MSG("Setting fixed joint...");
                     multibody->setupFixed(index, mass, inertiaDiag, parentIndex, parentRotToThis, offsetInA.getOrigin(), -offsetInB.getOrigin(), disableParentCollision);
                     break;
                 }
@@ -438,7 +439,7 @@ namespace beautiful_bullet {
                     const aiScene* scene = importer.loadMesh(_path + mesh->filename);
                     btVector3 scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
 
-                    std::cout << mesh->filename << std::endl;
+                    DEBUG_MSG(mesh->filename);
 
                     collisionShape = createConvexHullFromShapes(scene, scale);
 

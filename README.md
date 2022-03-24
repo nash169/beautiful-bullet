@@ -18,7 +18,6 @@ The library is still in its early stages and many other Bullet features remain t
 - Fix Franka URDF (problem with prismatic links hand)
 - Check memory allocation
 - Add visualization collision objects (implement imgui in graphics-lib)
-- Remove debug messages
 - Add flags when loading multibody collision shapes
 
 ### Dependencies
