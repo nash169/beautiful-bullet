@@ -61,16 +61,16 @@ namespace beautiful_bullet {
             btMultiBody* body();
 
             /* Get multibody joint state */
-            const Eigen::VectorXd& state();
+            const Eigen::VectorXd& state() const;
 
             /* Get multibody joint state derivative */
-            const Eigen::VectorXd& velocity();
+            const Eigen::VectorXd& velocity() const;
 
             /* Get multibody joint state second derivative */
             Eigen::VectorXd acceleration();
 
             /* Get multibody joint torques */
-            Eigen::VectorXd torques();
+            const Eigen::VectorXd& torques() const;
 
             /* Get pose of the frame */
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
@@ -133,7 +133,7 @@ namespace beautiful_bullet {
 
             // MultiBody's state (pos and vel)
             // Don't know if it is good to keep a copy of the body states here
-            Eigen::VectorXd _q, _v;
+            Eigen::VectorXd _q, _v, _tau;
 
             // Bullet MultiBody Object
             btMultiBody* _body = nullptr;

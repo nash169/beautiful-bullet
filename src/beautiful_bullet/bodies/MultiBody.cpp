@@ -43,6 +43,7 @@ namespace beautiful_bullet {
             // Init agent internal state variable
             _q.setZero(_body->getNumDofs());
             _v.setZero(_body->getNumDofs());
+            _tau.setZero(_body->getNumDofs());
 
             // Store inertia frame of the root node
             // (not keeping track of it at the moment)
@@ -110,32 +111,26 @@ namespace beautiful_bullet {
             return _body;
         }
 
-        const Eigen::VectorXd& MultiBody::state()
+        const Eigen::VectorXd& MultiBody::state() const
         {
             return _q;
         }
 
-        const Eigen::VectorXd& MultiBody::velocity()
+        const Eigen::VectorXd& MultiBody::velocity() const
         {
             return _v;
         }
 
         Eigen::VectorXd MultiBody::acceleration()
         {
-            // Using pinocchio for the moment to compute the forward dynamics
-            pinocchio::aba(*_model, *_data, state(), velocity(), torques());
+            // Using pinocchio to compute the forward dynamics
+            pinocchio::aba(*_model, *_data, state(), velocity(), _tau);
             return _data->ddq;
         }
 
-        Eigen::VectorXd MultiBody::torques()
+        const Eigen::VectorXd& MultiBody::torques() const
         {
-            // Using Bullet to compute the inverse dynamics
-            Eigen::VectorXd tau(_body->getNumDofs());
-
-            for (size_t i = 0; i < _body->getNumDofs(); i++)
-                tau(i) = _body->getJointTorque(i);
-
-            return tau;
+            return _tau;
         }
 
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
@@ -345,28 +340,27 @@ namespace beautiful_bullet {
             }
 
             // Command force
-            Eigen::VectorXd tau = Eigen::VectorXd::Zero(_body->getNumDofs());
+            _tau.setZero(_body->getNumDofs());
 
             // Gravity compensation
             if (_gravity)
-                tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v);
-            // pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
+                _tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v); // pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
 
             // Control
             for (auto& controller : _controllers) {
                 if (controller->mode() == ControlMode::CONFIGURATIONSPACE)
-                    tau += controller->action(*this);
+                    _tau += controller->action(*this);
                 else if (controller->mode() == ControlMode::OPERATIONSPACE)
-                    tau += jacobian(controller->frame()).transpose() * controller->action(*this);
+                    _tau += jacobian(controller->frame()).transpose() * controller->action(*this);
             }
 
             // Set torques
             for (size_t i = 0; i < _body->getNumDofs(); i++) {
                 // Clip force
-                clipForce(i, tau(i));
+                clipForce(i, _tau(i));
 
                 // Apply force
-                _body->addJointTorque(i, tau(i));
+                _body->addJointTorque(i, _tau(i));
             }
         }
     } // namespace bodies
