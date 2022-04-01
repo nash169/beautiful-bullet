@@ -273,7 +273,7 @@ namespace beautiful_bullet {
             return *this;
         }
 
-        inline void step()
+        inline void step(const size_t& time = 1)
         {
             // Update objects
             for (auto& object : _rigidBody)
@@ -285,6 +285,10 @@ namespace beautiful_bullet {
 
             // Simulation step
             _world->stepSimulation(_timeStep, 0);
+
+            // Refresh graphics
+            if (time % _graphics->desiredFPS() == 0)
+                _graphics->refresh();
         }
 
         /* Run simulation */
