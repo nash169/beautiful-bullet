@@ -34,6 +34,12 @@ namespace beautiful_bullet {
 
     namespace control {
         class RigidBodyCtr : public AbstractControl<bodies::RigidBody> {
+        public:
+            /* Constructor */
+            RigidBodyCtr() = default;
+
+            /* Destroyer */
+            virtual ~RigidBodyCtr() = default;
         };
     } // namespace control
 

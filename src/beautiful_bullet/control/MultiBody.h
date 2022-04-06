@@ -43,6 +43,9 @@ namespace beautiful_bullet {
             /* Constructor */
             MultiBodyCtr(const ControlMode& mode = ControlMode::CONFIGURATIONSPACE) : _mode(mode) {}
 
+            /* Destroyer */
+            virtual ~MultiBodyCtr() = default;
+
             /* Get control mode */
             const ControlMode& mode() const { return _mode; }
 
