@@ -173,6 +173,11 @@ namespace beautiful_bullet {
             return _data->g;
         }
 
+        const Eigen::VectorXd MultiBody::nonLinearEffects()
+        {
+            return pinocchio::nonLinearEffects(*_model, *_data, _q, _v);
+        }
+
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
         {
             // Get frame ID

@@ -80,6 +80,7 @@ namespace beautiful_bullet {
             const Eigen::MatrixXd inertiaMatrix();
             const Eigen::MatrixXd coriolisMatrix();
             const Eigen::VectorXd gravityVector();
+            const Eigen::VectorXd nonLinearEffects();
 
             /* Get pose of the frame */
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
