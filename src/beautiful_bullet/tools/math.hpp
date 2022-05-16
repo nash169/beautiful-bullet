@@ -44,6 +44,25 @@ namespace beautiful_bullet {
 
             return (Eigen::Matrix<double, 6, 1>() << (Eigen::Matrix3d::Identity() - 0.5 * omega_skew + (1 - 0.5 * A / B) / std::pow(theta, 2) * omega_skew * omega_skew) * position, omega).finished();
         }
+
+        // Check here if this can be improved
+        Eigen::MatrixXd pseudoInverse(const Eigen::MatrixXd& M)
+        {
+            double epsilon = std::numeric_limits<double>::epsilon();
+
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd(M, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+            Eigen::JacobiSVD<Eigen::MatrixXd>::SingularValuesType sing_vals = svd.singularValues();
+
+            double tolerance = epsilon * std::max(M.cols(), M.rows()) * sing_vals.array().abs()(0);
+            Eigen::MatrixXd S = Eigen::MatrixXd::Zero(M.rows(), M.cols());
+
+            for (size_t i = 0; i < sing_vals.size(); i++)
+                if (std::fabs(sing_vals(i)) > tolerance)
+                    S(i, i) = 1.0 / sing_vals(i);
+
+            return svd.matrixV() * S.transpose() * svd.matrixU().adjoint();
+        }
     } // namespace tools
 
 } // namespace beautiful_bullet

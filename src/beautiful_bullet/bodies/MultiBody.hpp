@@ -62,15 +62,24 @@ namespace beautiful_bullet {
 
             /* Get multibody joint state */
             const Eigen::VectorXd& state() const;
+            const Eigen::VectorXd& upperLimits() const;
+            const Eigen::VectorXd& lowerLimits() const;
 
             /* Get multibody joint state derivative */
             const Eigen::VectorXd& velocity() const;
+            const Eigen::VectorXd& velocityLimits() const;
 
             /* Get multibody joint state second derivative */
             Eigen::VectorXd acceleration();
 
             /* Get multibody joint torques */
             const Eigen::VectorXd& torques() const;
+            const Eigen::VectorXd& torquesLimits() const;
+
+            /* Get Dynamics */
+            const Eigen::MatrixXd inertiaMatrix();
+            const Eigen::MatrixXd coriolisMatrix();
+            const Eigen::VectorXd gravityVector();
 
             /* Get pose of the frame */
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
@@ -122,7 +131,7 @@ namespace beautiful_bullet {
             }
 
             /* Inverse Kinematics */
-            Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& index = "");
+            Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame = "", const Eigen::VectorXd* ref = nullptr);
 
             /* Update model */
             void update();

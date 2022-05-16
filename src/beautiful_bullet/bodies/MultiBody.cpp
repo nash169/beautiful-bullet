@@ -23,9 +23,11 @@
 */
 
 #include "beautiful_bullet/bodies/MultiBody.hpp"
+#include "beautiful_bullet/tools/math.hpp"
 
 // Pinocchio
 #include <pinocchio/algorithm/aba.hpp>
+#include <pinocchio/algorithm/crba.hpp>
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
@@ -116,9 +118,24 @@ namespace beautiful_bullet {
             return _q;
         }
 
+        const Eigen::VectorXd& MultiBody::upperLimits() const // using pinocchio for the moment because Bullet is bad
+        {
+            return _model->upperPositionLimit;
+        }
+
+        const Eigen::VectorXd& MultiBody::lowerLimits() const
+        {
+            return _model->lowerPositionLimit;
+        }
+
         const Eigen::VectorXd& MultiBody::velocity() const
         {
             return _v;
+        }
+
+        const Eigen::VectorXd& MultiBody::velocityLimits() const
+        {
+            return _model->velocityLimit;
         }
 
         Eigen::VectorXd MultiBody::acceleration()
@@ -131,6 +148,29 @@ namespace beautiful_bullet {
         const Eigen::VectorXd& MultiBody::torques() const
         {
             return _tau;
+        }
+
+        const Eigen::VectorXd& MultiBody::torquesLimits() const
+        {
+            return _model->effortLimit;
+        }
+
+        const Eigen::MatrixXd MultiBody::inertiaMatrix()
+        {
+            pinocchio::crba(*_model, *_data, _q);
+            return _data->M;
+        }
+
+        const Eigen::MatrixXd MultiBody::coriolisMatrix()
+        {
+            pinocchio::computeCoriolisMatrix(*_model, *_data, _q, _v);
+            return _data->C;
+        }
+
+        const Eigen::VectorXd MultiBody::gravityVector()
+        {
+            pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
+            return _data->g;
         }
 
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
@@ -267,7 +307,7 @@ namespace beautiful_bullet {
         }
 
         /* Inverse Kinematics */
-        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame)
+        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame, const Eigen::VectorXd* ref)
         {
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
@@ -319,6 +359,9 @@ namespace beautiful_bullet {
 
                 // Calculate velocity
                 v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
+
+                if (ref)
+                    v.noalias() += (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
 
                 // Calculate configuration
                 q = pinocchio::integrate(*_model, q, v * DT);
