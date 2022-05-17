@@ -112,6 +112,9 @@ namespace beautiful_bullet {
             /* Set multibody state */
             MultiBody& setVelocity(const Eigen::VectorXd& v);
 
+            /* Set torques */
+            MultiBody& setTorques(const Eigen::VectorXd& tau);
+
             /* Activate gravity compensation */
             MultiBody& activateGravity();
 

@@ -158,6 +158,7 @@ namespace beautiful_bullet {
         const Eigen::MatrixXd MultiBody::inertiaMatrix()
         {
             pinocchio::crba(*_model, *_data, _q);
+            _data->M.triangularView<Eigen::StrictlyLower>() = _data->M.transpose().triangularView<Eigen::StrictlyLower>();
             return _data->M;
         }
 
@@ -305,6 +306,17 @@ namespace beautiful_bullet {
             return *this;
         }
 
+        MultiBody& MultiBody::setTorques(const Eigen::VectorXd& tau)
+        {
+            _tau = tau;
+
+            // Update bullet body state
+            for (size_t i = 0; i < _body->getNumDofs(); i++)
+                _body->addJointTorque(i, _tau(i));
+
+            return *this;
+        }
+
         MultiBody& MultiBody::activateGravity()
         {
             _gravity = true;
@@ -385,10 +397,12 @@ namespace beautiful_bullet {
             for (size_t i = 0; i < _body->getNumDofs(); i++) {
                 _q(i) = _body->getJointPos(i);
                 _v(i) = _body->getJointVel(i);
+                _tau(i) = _body->getJointTorque(i);
             }
 
-            // Command force
-            _tau.setZero(_body->getNumDofs());
+            std::cout << _tau.transpose() << std::endl;
+            // // Command force
+            // _tau.setZero(_body->getNumDofs());
 
             // Gravity compensation
             if (_gravity)
