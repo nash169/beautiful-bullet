@@ -77,10 +77,11 @@ namespace beautiful_bullet {
             const Eigen::VectorXd& torquesLimits() const;
 
             /* Get Dynamics */
-            const Eigen::MatrixXd inertiaMatrix();
-            const Eigen::MatrixXd coriolisMatrix();
-            const Eigen::VectorXd gravityVector();
-            const Eigen::VectorXd nonLinearEffects();
+            Eigen::MatrixXd inertiaMatrix();
+            Eigen::MatrixXd coriolisMatrix();
+            Eigen::VectorXd gravityVector();
+            Eigen::VectorXd nonLinearEffects();
+            Eigen::VectorXd inverseDynamics(const Eigen::VectorXd& ddq);
 
             /* Get pose of the frame */
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");

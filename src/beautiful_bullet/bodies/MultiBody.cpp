@@ -156,28 +156,34 @@ namespace beautiful_bullet {
             return _model->effortLimit;
         }
 
-        const Eigen::MatrixXd MultiBody::inertiaMatrix()
+        Eigen::MatrixXd MultiBody::inertiaMatrix()
         {
             pinocchio::crba(*_model, *_data, _q);
             _data->M.triangularView<Eigen::StrictlyLower>() = _data->M.transpose().triangularView<Eigen::StrictlyLower>();
             return _data->M;
         }
 
-        const Eigen::MatrixXd MultiBody::coriolisMatrix()
+        Eigen::MatrixXd MultiBody::coriolisMatrix()
         {
             pinocchio::computeCoriolisMatrix(*_model, *_data, _q, _v);
             return _data->C;
         }
 
-        const Eigen::VectorXd MultiBody::gravityVector()
+        Eigen::VectorXd MultiBody::gravityVector()
         {
             pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
             return _data->g;
         }
 
-        const Eigen::VectorXd MultiBody::nonLinearEffects()
+        Eigen::VectorXd MultiBody::nonLinearEffects()
         {
             return pinocchio::nonLinearEffects(*_model, *_data, _q, _v);
+        }
+
+        Eigen::VectorXd MultiBody::inverseDynamics(const Eigen::VectorXd& ddq)
+        {
+            pinocchio::rnea(*_model, *_data, _q, _v, ddq);
+            return _data->tau;
         }
 
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
