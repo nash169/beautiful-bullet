@@ -70,6 +70,7 @@ namespace beautiful_bullet {
             // Move (copy) state
             _q = other._q;
             _v = other._v;
+            _tau = other._tau;
             _gravity = other._gravity;
 
             // Move RigidBody pointer
@@ -393,16 +394,12 @@ namespace beautiful_bullet {
         /* Update model */
         void MultiBody::update()
         {
-            // Get joint pose and vel
+            // Get joint pose, vel and effort
             for (size_t i = 0; i < _body->getNumDofs(); i++) {
                 _q(i) = _body->getJointPos(i);
                 _v(i) = _body->getJointVel(i);
                 _tau(i) = _body->getJointTorque(i);
             }
-
-            std::cout << _tau.transpose() << std::endl;
-            // // Command force
-            // _tau.setZero(_body->getNumDofs());
 
             // Gravity compensation
             if (_gravity)
