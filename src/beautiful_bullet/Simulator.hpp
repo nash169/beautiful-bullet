@@ -202,6 +202,16 @@ namespace beautiful_bullet {
             return *this;
         }
 
+        Simulator& initGraphics()
+        {
+            if (!_graphics)
+                _graphics = std::make_unique<graphics::AbstractGraphics>();
+
+            _graphics->init(*this);
+
+            return *this;
+        }
+
         /* Add ground into the simulation */
         Simulator& addGround()
         {
@@ -298,10 +308,7 @@ namespace beautiful_bullet {
             _clock = 0;
 
             // Init graphics
-            if (!_graphics)
-                _graphics = std::make_unique<graphics::AbstractGraphics>();
-
-            _graphics->init(*this);
+            initGraphics();
 
             while (runTime < 0 || _clock * _timeStep <= runTime) {
                 // Update objects
