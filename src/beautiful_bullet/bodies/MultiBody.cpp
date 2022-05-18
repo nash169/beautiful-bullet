@@ -43,6 +43,8 @@ namespace beautiful_bullet {
             _body = _loader.parseMultiBody(file, flags);
 
             // Init agent internal state variable
+            _x.setZero();
+            _r.setIdentity();
             _q.setZero(_body->getNumDofs());
             _v.setZero(_body->getNumDofs());
             _tau.setZero(_body->getNumDofs());
@@ -68,6 +70,8 @@ namespace beautiful_bullet {
         MultiBody::MultiBody(MultiBody&& other) noexcept
         {
             // Move (copy) state
+            _x = other._x;
+            _r = other._r;
             _q = other._q;
             _v = other._v;
             _tau = other._tau;
@@ -197,7 +201,7 @@ namespace beautiful_bullet {
             // Get frame pose
             pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
 
-            return oMf.translation();
+            return oMf.translation() + _x;
         }
 
         Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame)
@@ -211,7 +215,7 @@ namespace beautiful_bullet {
             // Get frame pose
             pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
 
-            return oMf.rotation();
+            return oMf.rotation(); // add transformation for orientation base
         }
 
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
@@ -226,7 +230,7 @@ namespace beautiful_bullet {
             pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
             Eigen::AngleAxisd rot(oMf.rotation());
 
-            return (Eigen::Matrix<double, 6, 1>() << oMf.translation(), rot.angle() * rot.axis()).finished();
+            return (Eigen::Matrix<double, 6, 1>() << oMf.translation() + _x, rot.angle() * rot.axis()).finished(); // add transformation for orientation base
         }
 
         Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame)
@@ -260,7 +264,7 @@ namespace beautiful_bullet {
 
             // Compute the jacobian
             pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, _q, _v);
-            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::WORLD, H);
+            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
 
             return H;
         }
@@ -274,6 +278,8 @@ namespace beautiful_bullet {
 
         MultiBody& MultiBody::setPosition(const double& x, const double& y, const double& z)
         {
+            _x << x, y, z;
+
             _body->setBasePos(btVector3(x, y, z) + _rootFrame.getOrigin());
 
             btAlignedObjectArray<btQuaternion> scratch_q;
@@ -287,6 +293,8 @@ namespace beautiful_bullet {
         /* Set agent (base) orientation */
         MultiBody& MultiBody::setOrientation(const double& roll, const double& pitch, const double& yaw)
         {
+            // add base orientation allocation _r
+
             _body->setWorldToBaseRot(btQuaternion(yaw, pitch, roll));
 
             btAlignedObjectArray<btQuaternion> scratch_q;
@@ -378,7 +386,7 @@ namespace beautiful_bullet {
 
             // Optim params
             const int IT_MAX = 1000;
-            const double eps = 1e-4, DT = 1e-1, damp = 1e-6;
+            const double eps = 1e-8, DT = 1e-1, damp = 1e-6;
 
             // Loop
             bool success = false;
@@ -441,6 +449,8 @@ namespace beautiful_bullet {
                 _tau(i) = _body->getJointTorque(i);
             }
 
+            std::cout << _tau.transpose() << std::endl;
+
             // Gravity compensation
             if (_gravity)
                 _tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v); // pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
@@ -452,6 +462,9 @@ namespace beautiful_bullet {
                 else if (controller->mode() == ControlMode::OPERATIONSPACE)
                     _tau += jacobian(controller->frame()).transpose() * controller->action(*this);
             }
+
+            // ugly solution (fix this)
+            _body->clearForcesAndTorques();
 
             // Set torques
             for (size_t i = 0; i < _body->getNumDofs(); i++) {

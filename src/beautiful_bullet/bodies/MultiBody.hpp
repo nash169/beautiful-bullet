@@ -85,7 +85,7 @@ namespace beautiful_bullet {
 
             /* Get pose of the frame */
             Eigen::Vector3d framePosition(const std::string& frame = "");
-            Eigen::Matrix3d frameOrientation(const std::string& frame= "");
+            Eigen::Matrix3d frameOrientation(const std::string& frame = "");
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
 
             /* Get velocity of the frame */
@@ -149,6 +149,8 @@ namespace beautiful_bullet {
 
             // MultiBody's state (pos and vel)
             // Don't know if it is good to keep a copy of the body states here
+            Eigen::Vector3d _x;
+            Eigen::Matrix3d _r;
             Eigen::VectorXd _q, _v, _tau;
 
             // Bullet MultiBody Object

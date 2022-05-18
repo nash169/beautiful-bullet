@@ -119,20 +119,25 @@ int main(int argc, char const* argv[])
     // Multi Bodies
     bodies::MultiBody iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf");
 
-    Eigen::VectorXd state(7);
-    state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
+    Eigen::VectorXd tau = Eigen::VectorXd::Random(7);
+    std::cout << tau.transpose() << std::endl;
+    iiwa.setTorques(tau);
+    iiwa.update();
 
-    // Add bodies to simulation
-    simulator.add(
-        iiwaBullet.setPosition(0, -1, 0)
-            .addControllers(std::make_unique<OperationSpaceCtr>())
-            .activateGravity(),
-        iiwa.setState(state)
-            .setPosition(0, 1, 0)
-            .activateGravity());
+    // Eigen::VectorXd state(7);
+    // state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
 
-    // Run simulation
-    simulator.run();
+    // // Add bodies to simulation
+    // simulator.add(
+    //     iiwaBullet.setPosition(0, -1, 0)
+    //         .addControllers(std::make_unique<OperationSpaceCtr>())
+    //         .activateGravity(),
+    //     iiwa.setState(state)
+    //         .setPosition(0, 1, 0)
+    //         .activateGravity());
+
+    // // Run simulation
+    // simulator.run();
 
     return 0;
 }
