@@ -186,6 +186,34 @@ namespace beautiful_bullet {
             return _data->tau;
         }
 
+        Eigen::Vector3d MultiBody::framePosition(const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, _q);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+
+            return oMf.translation();
+        }
+
+        Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, _q);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+
+            return oMf.rotation();
+        }
+
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
         {
             // Get frame ID
@@ -335,8 +363,14 @@ namespace beautiful_bullet {
         {
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
+            Eigen::Vector3d pos = position;
+            for (size_t i = 0; i < 3; i++)
+                pos[i] -= _body->getBasePos()[i];
+
+            std::cout << pos.transpose() << std::endl;
+
             // Desired Pose
-            const pinocchio::SE3 oMdes(orientation, position);
+            const pinocchio::SE3 oMdes(orientation, pos);
 
             // Jacobian
             pinocchio::Data::Matrix6x J(6, _model->nv);

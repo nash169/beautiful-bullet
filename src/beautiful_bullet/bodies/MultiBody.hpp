@@ -84,6 +84,8 @@ namespace beautiful_bullet {
             Eigen::VectorXd inverseDynamics(const Eigen::VectorXd& ddq);
 
             /* Get pose of the frame */
+            Eigen::Vector3d framePosition(const std::string& frame = "");
+            Eigen::Matrix3d frameOrientation(const std::string& frame= "");
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
 
             /* Get velocity of the frame */
