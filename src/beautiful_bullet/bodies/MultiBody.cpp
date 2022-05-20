@@ -367,7 +367,7 @@ namespace beautiful_bullet {
         }
 
         /* Inverse Kinematics */
-        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame, const Eigen::VectorXd* ref)
+        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame, const Eigen::VectorXd* ref, const double& w)
         {
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
@@ -427,7 +427,7 @@ namespace beautiful_bullet {
                 v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
 
                 if (ref)
-                    v.noalias() += (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
+                    v.noalias() += w * (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
 
                 // Calculate configuration
                 q = pinocchio::integrate(*_model, q, v * DT);
