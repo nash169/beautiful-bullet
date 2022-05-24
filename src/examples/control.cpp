@@ -65,6 +65,7 @@ public:
 
         // goal
         Eigen::Vector3d xDes(0.365308, -0.0810892, 1.13717);
+        xDes += Eigen::Vector3d(0, -1, 0);
         Eigen::Matrix3d oDes;
         oDes << 0.591427, -0.62603, 0.508233,
             0.689044, 0.719749, 0.0847368,
@@ -119,25 +120,20 @@ int main(int argc, char const* argv[])
     // Multi Bodies
     bodies::MultiBody iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf");
 
-    Eigen::VectorXd tau = Eigen::VectorXd::Random(7);
-    std::cout << tau.transpose() << std::endl;
-    iiwa.setTorques(tau);
-    iiwa.update();
+    Eigen::VectorXd state(7);
+    state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
 
-    // Eigen::VectorXd state(7);
-    // state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
+    // Add bodies to simulation
+    simulator.add(
+        iiwaBullet.setPosition(0, -1, 0)
+            .addControllers(std::make_unique<OperationSpaceCtr>())
+            .activateGravity(),
+        iiwa.setState(state)
+            .setPosition(0, 1, 0)
+            .activateGravity());
 
-    // // Add bodies to simulation
-    // simulator.add(
-    //     iiwaBullet.setPosition(0, -1, 0)
-    //         .addControllers(std::make_unique<OperationSpaceCtr>())
-    //         .activateGravity(),
-    //     iiwa.setState(state)
-    //         .setPosition(0, 1, 0)
-    //         .activateGravity());
-
-    // // Run simulation
-    // simulator.run();
+    // Run simulation
+    simulator.run();
 
     return 0;
 }
