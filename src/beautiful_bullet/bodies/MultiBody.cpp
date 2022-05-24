@@ -449,8 +449,6 @@ namespace beautiful_bullet {
                 _tau(i) = _body->getJointTorque(i);
             }
 
-            std::cout << _tau.transpose() << std::endl;
-
             // Gravity compensation
             if (_gravity)
                 _tau += pinocchio::nonLinearEffects(*_model, *_data, _q, _v); // pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
