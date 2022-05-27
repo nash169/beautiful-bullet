@@ -46,6 +46,7 @@ namespace beautiful_bullet {
             /* Constructor */
             MultiBody(const std::string& file, int flags = 0);
 
+            // Default constructor
             MultiBody() = default;
 
             // Move constructor

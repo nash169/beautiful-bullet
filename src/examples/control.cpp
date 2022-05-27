@@ -120,20 +120,33 @@ int main(int argc, char const* argv[])
     // Multi Bodies
     bodies::MultiBody iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf");
 
+    std::shared_ptr<bodies::MultiBody> iiwaBulletShared = std::make_shared<bodies::MultiBody>("models/iiwa_bullet/model.urdf"),
+                                       iiwaShared = std::make_shared<bodies::MultiBody>("models/iiwa/urdf/iiwa14.urdf");
+
     Eigen::VectorXd state(7);
     state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
 
     // Add bodies to simulation
-    simulator.add(
-        iiwaBullet.setPosition(0, -1, 0)
-            .addControllers(std::make_unique<OperationSpaceCtr>())
-            .activateGravity(),
-        iiwa.setState(state)
-            .setPosition(0, 1, 0)
-            .activateGravity());
+    // simulator.add(
+    //     iiwaBullet.setPosition(0, -1, 0)
+    //         .addControllers(std::make_unique<OperationSpaceCtr>())
+    //         .activateGravity(),
+    //     iiwa.setState(state)
+    //         .setPosition(0, 1, 0)
+    //         .activateGravity());
+
+    iiwaBulletShared->setPosition(0, -1, 0)
+        .addControllers(std::make_unique<OperationSpaceCtr>())
+        .activateGravity();
+    iiwaShared->setState(state)
+        .setPosition(0, 1, 0)
+        .activateGravity();
+
+    simulator.add2(iiwaBulletShared, iiwaShared);
 
     // Run simulation
-    simulator.run();
+    // simulator.run();
+    simulator.run2();
 
     return 0;
 }
