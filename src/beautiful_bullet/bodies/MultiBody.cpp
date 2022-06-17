@@ -269,6 +269,11 @@ namespace beautiful_bullet {
             return H;
         }
 
+        utils::BulletLoader& MultiBody::loader()
+        {
+            return _loader;
+        }
+
         MultiBody& MultiBody::setBody(btMultiBody* body) // (remember to init state here)
         {
             _body = body;
@@ -472,6 +477,16 @@ namespace beautiful_bullet {
                 // Apply force
                 _body->addJointTorque(i, _tau(i));
             }
+        }
+
+        inline void MultiBody::clipForce(const int& index, double& force)
+        {
+            double maxForce = _body->getLink(index).m_jointMaxForce;
+
+            if (force >= maxForce)
+                force = maxForce;
+            else if (force <= -maxForce)
+                force = -maxForce;
         }
     } // namespace bodies
 } // namespace beautiful_bullet

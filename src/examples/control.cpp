@@ -31,6 +31,8 @@
 #include <control_lib/controllers/Feedback.hpp>
 #include <control_lib/controllers/LinearDynamics.hpp>
 
+#include <beautiful_bullet/bodies/MultiBody.hpp>
+
 using namespace beautiful_bullet;
 using namespace control_lib;
 
@@ -122,6 +124,8 @@ int main(int argc, char const* argv[])
 
     std::shared_ptr<bodies::MultiBody> iiwaBulletShared = std::make_shared<bodies::MultiBody>("models/iiwa_bullet/model.urdf"),
                                        iiwaShared = std::make_shared<bodies::MultiBody>("models/iiwa/urdf/iiwa14.urdf");
+
+    MultiBodyPtr test = std::make_shared<bodies::MultiBody>("models/iiwa_bullet/model.urdf");
 
     Eigen::VectorXd state(7);
     state << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;

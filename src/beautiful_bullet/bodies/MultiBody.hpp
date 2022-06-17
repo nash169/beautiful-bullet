@@ -25,10 +25,6 @@
 #ifndef BEAUTIFULBULLET_BODIES_MULTIBODY_HPP
 #define BEAUTIFULBULLET_BODIES_MULTIBODY_HPP
 
-// Standard
-#include <iostream>
-#include <unordered_map>
-
 // Bullet
 #include <BulletCollision/btBulletCollisionCommon.h>
 #include <LinearMath/btVector3.h>
@@ -36,6 +32,7 @@
 // Pinocchio
 #include <pinocchio/multibody/fwd.hpp>
 
+#include "beautiful_bullet/common/pointers.hpp"
 #include "beautiful_bullet/control/MultiBody.h"
 #include "beautiful_bullet/utils/BulletLoader.hpp"
 
@@ -99,7 +96,7 @@ namespace beautiful_bullet {
             Eigen::MatrixXd hessian(const std::string& frame = "");
 
             /* Get Bullet loader */
-            utils::BulletLoader& loader() { return _loader; }
+            utils::BulletLoader& loader();
 
             /* Set multibody */
             MultiBody& setBody(btMultiBody* body);
@@ -172,16 +169,10 @@ namespace beautiful_bullet {
             std::vector<std::unique_ptr<control::MultiBodyCtr>> _controllers;
 
             // Clip force
-            inline void clipForce(const int& index, double& force)
-            {
-                double maxForce = _body->getLink(index).m_jointMaxForce;
-
-                if (force >= maxForce)
-                    force = maxForce;
-                else if (force <= -maxForce)
-                    force = -maxForce;
-            }
+            inline void clipForce(const int& index, double& force);
         };
+
+        COMMON_DECLARE_SHARED(MultiBody)
     } // namespace bodies
 } // namespace beautiful_bullet
 
