@@ -34,9 +34,9 @@ srcdir = "."
 blddir = "build"
 
 # Tools' name and directory
-tools = {"graphicslib": "/home/bernardo/Developments/graphics-lib/install",
-         "utilslib": "/home/bernardo/Developments/utils-lib/install",
-         "controllib": "/home/bernardo/Developments/control-lib/install"}
+tools = {"graphicslib": "",
+         "utilslib": "",
+         "controllib": ""}
 
 
 def options(opt):
