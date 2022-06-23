@@ -103,11 +103,20 @@ namespace beautiful_bullet {
         _collisionConfiguration = nullptr;
     }
 
-    btMultiBodyDynamicsWorld* Simulator::world() { return _world; }
+    btMultiBodyDynamicsWorld* Simulator::world()
+    {
+        return _world;
+    }
 
-    std::vector<bodies::MultiBody>& Simulator::agents() { return _multiBody; }
+    std::vector<bodies::MultiBodyPtr>& Simulator::multiBodies()
+    {
+        return _multiBody;
+    }
 
-    std::vector<bodies::RigidBody>& Simulator::objects() { return _rigidBody; }
+    std::vector<bodies::RigidBodyPtr>& Simulator::rigidBodies()
+    {
+        return _rigidBody;
+    }
 
     Simulator& Simulator::setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
     {
@@ -134,18 +143,21 @@ namespace beautiful_bullet {
             .setMass(0)
             .setFriction(0.5);
 
-        return add(bodies::RigidBody("box", params).setPosition(0, 0, -0.5));
+        bodies::RigidBodyPtr ground = std::make_shared<bodies::RigidBody>("box", params);
+        ground->setPosition(0, 0, -0.5);
+
+        return add(ground);
     }
 
     inline void Simulator::step(const size_t& time)
     {
         // Update objects
         for (auto& object : _rigidBody)
-            object.update();
+            object->update();
 
         // Update agents
         for (auto& agent : _multiBody)
-            agent.update();
+            agent->update();
 
         // Simulation step
         _world->stepSimulation(_timeStep, 0);
@@ -165,12 +177,12 @@ namespace beautiful_bullet {
 
         while (runTime < 0 || _clock * _timeStep <= runTime) {
             // Update objects
-            for (auto& object : _rigidBody)
-                object.update();
+            for (auto body : _rigidBody)
+                body->update();
 
             // Update agents
-            for (auto& agent : _multiBody)
-                agent.update();
+            for (auto body : _multiBody)
+                body->update();
 
             // Simulation step
             _world->stepSimulation(_timeStep, 0);
@@ -185,34 +197,50 @@ namespace beautiful_bullet {
         }
     }
 
-    void Simulator::run2(double runTime)
+    void Simulator::addRigidBody(btRigidBody* body)
     {
-        // Reset clock
-        _clock = 0;
+        // Add rigid body
+        _world->addRigidBody(body);
 
-        // Init graphics
-        initGraphics();
+        // Add collision shape
+        _collisionShapes.push_back(body->getCollisionShape());
+    }
 
-        while (runTime < 0 || _clock * _timeStep <= runTime) {
-            // Update objects
-            for (auto body : _rBody)
-                body->update();
+    void Simulator::addMultiBody(btMultiBody* body)
+    {
+        for (int i = -1; i < body->getNumLinks(); i++) {
+            if (i >= 0) {
+                // Add joint constraints to the world
+                if (body->getLink(i).m_jointType == btMultibodyLink::eRevolute || body->getLink(i).m_jointType == btMultibodyLink::ePrismatic)
+                    if (body->getLink(i).m_jointLowerLimit <= body->getLink(i).m_jointUpperLimit) {
+                        btMultiBodyConstraint* constraint = new btMultiBodyJointLimitConstraint(body, i, body->getLink(i).m_jointLowerLimit, body->getLink(i).m_jointUpperLimit);
+                        _world->addMultiBodyConstraint(constraint);
+                    }
 
-            // Update agents
-            for (auto body : _mBody)
-                body->update();
+                // Add collision object to the world
+                bool isDynamic = (i == -1 && body->hasFixedBase()) ? false : true;
+                int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
+                    collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
-            // Simulation step
-            _world->stepSimulation(_timeStep, 0);
+                _world->addCollisionObject(body->getLinkCollider(i), collisionFilterGroup, collisionFilterMask);
 
-            // Refresh graphics
-            if (_clock % _graphics->desiredFPS() == 0)
-                if (!_graphics->refresh())
-                    break;
+                // Add collision shape
+                _collisionShapes.push_back(body->getLinkCollider(i)->getCollisionShape());
+            }
+            else {
+                // Add collision object to the world
+                bool isDynamic = (i == -1 && body->hasFixedBase()) ? false : true;
+                int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter),
+                    collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
-            // Increment clock
-            _clock++;
+                _world->addCollisionObject(body->getBaseCollider(), collisionFilterGroup, collisionFilterMask);
+
+                // Add collision shape
+                _collisionShapes.push_back(body->getBaseCollider()->getCollisionShape());
+            }
         }
+
+        _world->addMultiBody(body);
     }
 
 } // namespace beautiful_bullet

@@ -5,7 +5,6 @@
 
 // Define a typedef for const and non-const version of shared_ptr for the class X
 #define COMMON_DECLARE_SHARED(X)       \
-    class X;                           \
     using X##Ptr = std::shared_ptr<X>; \
     using Const##X##Ptr = std::shared_ptr<const X>;
 

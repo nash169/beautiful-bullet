@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     // Create simulator
     Simulator simulator;
 
-    // Add graphics
+// Add graphics
 #ifdef GRAPHICS
     simulator.setGraphics(std::make_unique<graphics::MagnumGraphics>());
 #endif
@@ -53,22 +53,28 @@ int main(int argc, char** argv)
     paramsSphere.setRadius(0.5).setMass(0.1).setFriction(0.5).setColor("green");
 
     // Create RigidBodies
-    bodies::RigidBody box("box", paramsBox), sphere("sphere", paramsSphere);
+    bodies::RigidBodyPtr box = std::make_shared<bodies::RigidBody>("box", paramsBox),
+                         sphere = std::make_shared<bodies::RigidBody>("sphere", paramsSphere);
+
+    box->setPosition(0, 2, 10);
+    sphere->setPosition(0, -2, 10);
 
     // MultiBodies params
     Eigen::VectorXd state(7);
     state << 0, 0.2, 0, 0, 0, 0, 0;
 
     // Create agent
-    bodies::MultiBody iiwaBullet("models/iiwa_bullet/model.urdf"), iiwa("models/iiwa/urdf/iiwa14.urdf"), franka("models/franka/urdf/panda.urdf");
+    bodies::MultiBodyPtr iiwaBullet = std::make_shared<bodies::MultiBody>("models/iiwa_bullet/model.urdf"),
+                         iiwa = std::make_shared<bodies::MultiBody>("models/iiwa/urdf/iiwa14.urdf"),
+                         franka = std::make_shared<bodies::MultiBody>("models/franka/urdf/panda.urdf");
+
+    iiwaBullet->setPosition(2, -2, 0)
+        .setState(state);
+    iiwa->setPosition(2, 2, 0);
+    franka->activateGravity();
 
     // Add objects to simulator
-    simulator.add(
-        box.setPosition(0, 2, 10),
-        sphere.setPosition(0, -2, 10),
-        iiwaBullet.setPosition(2, -2, 0).setState(state),
-        iiwa.setPosition(2, 2, 0),
-        franka.activateGravity());
+    simulator.add(box, sphere, iiwaBullet, iiwa, franka);
 
     // Run simulation
     simulator.run();

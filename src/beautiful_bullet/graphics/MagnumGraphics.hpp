@@ -60,83 +60,83 @@ namespace beautiful_bullet {
                 // Set camera pose
                 _app->camera3D().setPose(Vector3{6., 0., 2.});
 
-                // Add objects to graphics
-                for (auto& object : simulator.objects()) {
+                // Add RigidBodies to graphics
+                for (auto& body : simulator.rigidBodies()) {
                     // Object pose
                     btTransform pose;
                     pose.setIdentity();
-                    pose.setOrigin(object.body()->getCenterOfMassPosition());
-                    pose.setRotation(object.body()->getOrientation());
+                    pose.setOrigin(body->body()->getCenterOfMassPosition());
+                    pose.setRotation(body->body()->getOrientation());
 
-                    if (object.type() == bodies::BodyType::BOX) {
+                    if (body->type() == bodies::BodyType::BOX) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cube")
-                                .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(object.body()->getCollisionShape())->getHalfExtentsWithMargin())))
-                                .setColor(tools::color(object.params().color))
+                                .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(body->body()->getCollisionShape())->getHalfExtentsWithMargin())))
+                                .setColor(tools::color(body->params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
-                        object.body()->setMotionState(&motionState->btMotionState());
+                        body->body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == bodies::BodyType::SPHERE) {
+                    else if (body->type() == bodies::BodyType::SPHERE) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("sphere")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<bodies::SphereParams&>(object.params()).radius,
-                                            static_cast<bodies::SphereParams&>(object.params()).radius,
-                                            static_cast<bodies::SphereParams&>(object.params()).radius)))
-                                .setColor(tools::color(object.params().color))
+                                            static_cast<bodies::SphereParams&>(body->params()).radius,
+                                            static_cast<bodies::SphereParams&>(body->params()).radius,
+                                            static_cast<bodies::SphereParams&>(body->params()).radius)))
+                                .setColor(tools::color(body->params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
-                        object.body()->setMotionState(&motionState->btMotionState());
+                        body->body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == bodies::BodyType::CYLINDER) {
+                    else if (body->type() == bodies::BodyType::CYLINDER) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("cylinder")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<bodies::CylinderParams&>(object.params()).radius2,
-                                            static_cast<bodies::CylinderParams&>(object.params()).height,
-                                            static_cast<bodies::CylinderParams&>(object.params()).radius1)))
-                                .setColor(tools::color(object.params().color))
+                                            static_cast<bodies::CylinderParams&>(body->params()).radius2,
+                                            static_cast<bodies::CylinderParams&>(body->params()).height,
+                                            static_cast<bodies::CylinderParams&>(body->params()).radius1)))
+                                .setColor(tools::color(body->params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
-                        object.body()->setMotionState(&motionState->btMotionState());
+                        body->body()->setMotionState(&motionState->btMotionState());
                     }
-                    else if (object.type() == bodies::BodyType::CAPSULE) {
+                    else if (body->type() == bodies::BodyType::CAPSULE) {
                         auto motionState = new BulletIntegration::MotionState{
                             _app->addPrimitive("capsule")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
-                                            static_cast<bodies::CapsuleParams&>(object.params()).radius,
-                                            static_cast<bodies::CapsuleParams&>(object.params()).radius,
-                                            static_cast<bodies::CapsuleParams&>(object.params()).height)))
-                                .setColor(tools::color(object.params().color))
+                                            static_cast<bodies::CapsuleParams&>(body->params()).radius,
+                                            static_cast<bodies::CapsuleParams&>(body->params()).radius,
+                                            static_cast<bodies::CapsuleParams&>(body->params()).height)))
+                                .setColor(tools::color(body->params().color))
                                 .setTransformation(Matrix4(pose))};
 
                         // Override motion state
-                        object.body()->setMotionState(&motionState->btMotionState());
+                        body->body()->setMotionState(&motionState->btMotionState());
                     }
                     else
                         std::cerr << "Shape not found." << std::endl;
                 }
 
-                // Add agents to graphics
-                for (auto& agent : simulator.agents()) {
-                    auto model = agent.loader().model();
+                // Add MultiBodies to graphics
+                for (auto& body : simulator.multiBodies()) {
+                    auto model = body->loader().model();
 
                     const urdf::Link* root = model->getRoot().get();
 
                     if (root->name == "world")
                         root = root->child_links[0].get();
 
-                    if (!createVisualRecursive(model.get(), root, agent.body(), agent.loader().path()))
+                    if (!createVisualRecursive(model.get(), root, body->body(), body->loader().path()))
                         return false;
                 }
 
