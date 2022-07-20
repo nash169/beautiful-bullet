@@ -24,54 +24,41 @@
 #    SOFTWARE.
 
 import os
-import fnmatch
+
+required = {"simulation.cpp": ["UTILSLIB"]}
+optional = {"simulation.cpp": ["GRAPHICSLIB"]}
+
+
+def options(opt):
+    pass
+
+
+def configure(cfg):
+    pass
 
 
 def build(bld):
-    # Includes
-    includes_path = ".."
-
-    # Get source files
     sources = []
-    for root, _, filenames in os.walk(bld.path.abspath()):
-        for filename in fnmatch.filter(filenames, "*.cpp"):
-            sources.append(os.path.join(root, filename))
-    sources = [f[len(bld.path.abspath()) + 1:] for f in sources]
-
-    # External required libraries for the examples
-    example_required = {"simulation.cpp": ["UTILSLIB"]}
-
-    # External optional libraries for the examples
-    example_optional = {"simulation.cpp": ["GRAPHICSLIB"]}
+    for _, _, filenames in os.walk(bld.path.abspath()):
+        sources += [
+            filename for filename in filenames if filename.endswith(('.cpp', '.cc'))]
 
     # Compile all the examples
     for example in sources:
-        # Activate optional defines
-        if example in example_optional and set(example_optional[example]).issubset(bld.env["libs"]):
-            optional_defines = ["GRAPHICS"]
-        else:
-            optional_defines = None
+        defines = ["GRAPHICS"] if example in optional and set(
+            optional[example]).issubset(bld.env["libs"]) else None
 
-        if example in example_required:
-            if set(example_required[example]).issubset(bld.env["libs"]):
-                bld.program(
-                    features="cxx",
-                    install_path=None,
-                    source=example,
-                    includes=includes_path,
-                    uselib=bld.env["libs"],
-                    use=bld.env["libname"],
-                    defines=optional_defines,
-                    target=example[: len(example) - len(".cpp")],
-                )
-        else:
-            bld.program(
-                features="cxx",
-                install_path=None,
-                source=example,
-                includes=includes_path,
-                uselib=bld.env["libs"],
-                use=bld.env["libname"],
-                defines=optional_defines,
-                target=example[: len(example) - len(".cpp")],
-            )
+        if example in required:
+            if not set(required[example]).issubset(bld.env["libs"]):
+                break
+
+        bld.program(
+            features="cxx",
+            install_path=None,
+            source=example,
+            includes="..",
+            uselib=bld.env["libs"],
+            use=bld.env["libname"],
+            defines=defines,
+            target=example[: len(example) - len(".cpp")],
+        )
