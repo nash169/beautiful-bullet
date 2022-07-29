@@ -59,41 +59,40 @@ namespace beautiful_bullet {
             btMultiBody* body();
 
             /* Get multibody joint state */
-            const Eigen::VectorXd& state() const;
-            const Eigen::VectorXd& upperLimits() const;
-            const Eigen::VectorXd& lowerLimits() const;
+            Eigen::VectorXd state() const;
+            Eigen::VectorXd positionLower() const;
+            Eigen::VectorXd positionUpper() const;
 
             /* Get multibody joint state derivative */
-            const Eigen::VectorXd& velocity() const;
-            const Eigen::VectorXd& velocityLimits() const;
+            Eigen::VectorXd velocity() const;
+            Eigen::VectorXd velocityLower() const;
+            Eigen::VectorXd velocityUpper() const;
 
             /* Get multibody joint state second derivative */
             Eigen::VectorXd acceleration();
 
             /* Get multibody joint torques */
-            const Eigen::VectorXd& torques() const;
-            const Eigen::VectorXd& torquesLimits() const;
+            Eigen::VectorXd effort() const;
+            Eigen::VectorXd effortLower() const;
+            Eigen::VectorXd effortUpper() const;
+            Eigen::VectorXd inverseDynamics(const Eigen::VectorXd& ddq);
 
             /* Get Dynamics */
             Eigen::MatrixXd inertiaMatrix();
             Eigen::MatrixXd coriolisMatrix();
             Eigen::VectorXd gravityVector();
             Eigen::VectorXd nonLinearEffects();
-            Eigen::VectorXd inverseDynamics(const Eigen::VectorXd& ddq);
+            Eigen::MatrixXd selectionMatrix();
 
-            /* Get pose of the frame */
+            /*Get Jacobian & Jacobian derivative*/
+            Eigen::MatrixXd jacobian(const std::string& frame = "");
+            Eigen::MatrixXd jacobianDerivative(const std::string& frame = "");
+
+            /* Get frame */
             Eigen::Vector3d framePosition(const std::string& frame = "");
             Eigen::Matrix3d frameOrientation(const std::string& frame = "");
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
-
-            /* Get velocity of the frame */
             Eigen::Matrix<double, 6, 1> frameVelocity(const std::string& frame = "");
-
-            /* Get Jacobian */
-            Eigen::MatrixXd jacobian(const std::string& frame = "");
-
-            /* Get Hessian (Jacobian time variation precisely) */
-            Eigen::MatrixXd hessian(const std::string& frame = "");
 
             /* Get Bullet loader */
             utils::BulletLoader& loader();

@@ -113,35 +113,15 @@ namespace beautiful_bullet {
             delete _model;
         }
 
-        btMultiBody* MultiBody::body()
-        {
-            return _body;
-        }
+        btMultiBody* MultiBody::body() { return _body; }
 
-        const Eigen::VectorXd& MultiBody::state() const
-        {
-            return _q;
-        }
+        Eigen::VectorXd MultiBody::state() const { return _q; }
+        Eigen::VectorXd MultiBody::positionLower() const { return _model->lowerPositionLimit; }
+        Eigen::VectorXd MultiBody::positionUpper() const { return _model->upperPositionLimit; }
 
-        const Eigen::VectorXd& MultiBody::upperLimits() const // using pinocchio for the moment because Bullet is bad
-        {
-            return _model->upperPositionLimit;
-        }
-
-        const Eigen::VectorXd& MultiBody::lowerLimits() const
-        {
-            return _model->lowerPositionLimit;
-        }
-
-        const Eigen::VectorXd& MultiBody::velocity() const
-        {
-            return _v;
-        }
-
-        const Eigen::VectorXd& MultiBody::velocityLimits() const
-        {
-            return _model->velocityLimit;
-        }
+        Eigen::VectorXd MultiBody::velocity() const { return _v; }
+        Eigen::VectorXd MultiBody::velocityLower() const { return -_model->velocityLimit; }
+        Eigen::VectorXd MultiBody::velocityUpper() const { return _model->velocityLimit; }
 
         Eigen::VectorXd MultiBody::acceleration()
         {
@@ -150,14 +130,14 @@ namespace beautiful_bullet {
             return _data->ddq;
         }
 
-        const Eigen::VectorXd& MultiBody::torques() const
-        {
-            return _tau;
-        }
+        Eigen::VectorXd MultiBody::effort() const { return _tau; }
+        Eigen::VectorXd MultiBody::effortLower() const { return -_model->effortLimit; }
+        Eigen::VectorXd MultiBody::effortUpper() const { return _model->effortLimit; }
 
-        const Eigen::VectorXd& MultiBody::torquesLimits() const
+        Eigen::VectorXd MultiBody::inverseDynamics(const Eigen::VectorXd& ddq)
         {
-            return _model->effortLimit;
+            pinocchio::rnea(*_model, *_data, _q, _v, ddq);
+            return _data->tau;
         }
 
         Eigen::MatrixXd MultiBody::inertiaMatrix()
@@ -184,10 +164,40 @@ namespace beautiful_bullet {
             return pinocchio::nonLinearEffects(*_model, *_data, _q, _v);
         }
 
-        Eigen::VectorXd MultiBody::inverseDynamics(const Eigen::VectorXd& ddq)
+        Eigen::MatrixXd MultiBody::selectionMatrix()
         {
-            pinocchio::rnea(*_model, *_data, _q, _v, ddq);
-            return _data->tau;
+            return Eigen::MatrixXd::Identity(_tau.size(), _tau.size());
+        }
+
+        Eigen::MatrixXd MultiBody::jacobian(const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Init Jacobian
+            pinocchio::Data::Matrix6x J(6, _model->nv);
+            J.setZero();
+
+            // Compute the jacobian
+            pinocchio::computeFrameJacobian(*_model, *_data, _q, FRAME_ID, J);
+
+            return J;
+        }
+
+        Eigen::MatrixXd MultiBody::jacobianDerivative(const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Init Jacobian
+            pinocchio::Data::Matrix6x H(6, _model->nv);
+            H.setZero();
+
+            // Compute the jacobian
+            pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, _q, _v);
+            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
+
+            return H;
         }
 
         Eigen::Vector3d MultiBody::framePosition(const std::string& frame)
@@ -236,37 +246,6 @@ namespace beautiful_bullet {
         Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame)
         {
             return jacobian(frame) * _v;
-        }
-
-        Eigen::MatrixXd MultiBody::jacobian(const std::string& frame)
-        {
-            // Get frame ID
-            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
-
-            // Init Jacobian
-            pinocchio::Data::Matrix6x J(6, _model->nv);
-            J.setZero();
-
-            // Compute the jacobian
-            pinocchio::computeFrameJacobian(*_model, *_data, _q, FRAME_ID, J);
-
-            return J;
-        }
-
-        Eigen::MatrixXd MultiBody::hessian(const std::string& frame)
-        {
-            // Get frame ID
-            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
-
-            // Init Jacobian
-            pinocchio::Data::Matrix6x H(6, _model->nv);
-            H.setZero();
-
-            // Compute the jacobian
-            pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, _q, _v);
-            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
-
-            return H;
         }
 
         utils::BulletLoader& MultiBody::loader()
