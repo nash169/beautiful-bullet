@@ -149,24 +149,6 @@ namespace beautiful_bullet {
         return add(ground);
     }
 
-    inline void Simulator::step(const size_t& time)
-    {
-        // Update objects
-        for (auto& object : _rigidBody)
-            object->update();
-
-        // Update agents
-        for (auto& agent : _multiBody)
-            agent->update();
-
-        // Simulation step
-        _world->stepSimulation(_timeStep, 0);
-
-        // Refresh graphics
-        if (time % _graphics->desiredFPS() == 0)
-            _graphics->refresh();
-    }
-
     void Simulator::run(double runTime)
     {
         // Reset clock
