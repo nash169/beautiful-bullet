@@ -152,6 +152,12 @@ namespace beautiful_bullet {
                 return _app->mainLoopIteration();
             }
 
+            // Get Magnum Application
+            Graphics& app()
+            {
+                return *_app;
+            }
+
         protected:
             // Magnum-Dynamics application
             std::unique_ptr<Graphics> _app;

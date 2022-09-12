@@ -97,6 +97,9 @@ namespace beautiful_bullet {
         /* Get objects */
         std::vector<std::shared_ptr<bodies::RigidBody>>& rigidBodies();
 
+        /* Get graphics handle */
+        graphics::AbstractGraphics& graphics();
+
         /* Set graphics */
         Simulator& setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics);
 

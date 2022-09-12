@@ -118,6 +118,11 @@ namespace beautiful_bullet {
         return _rigidBody;
     }
 
+    graphics::AbstractGraphics& Simulator::graphics()
+    {
+        return *_graphics;
+    }
+
     Simulator& Simulator::setGraphics(std::unique_ptr<graphics::AbstractGraphics> graphics)
     {
         _graphics = std::move(graphics);
