@@ -351,45 +351,36 @@ namespace beautiful_bullet {
         }
 
         /* Inverse Kinematics */
-        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame, const Eigen::VectorXd* ref, const double& w)
+        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame) // const Eigen::VectorXd* ref, const double& w
         {
+            // Frame ID
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
-            Eigen::Vector3d pos = position;
-            for (size_t i = 0; i < 3; i++)
-                pos[i] -= _body->getBasePos()[i];
+            // Target SE3
+            const pinocchio::SE3 oMdes(orientation, position);
 
-            std::cout << pos.transpose() << std::endl;
+            // Optimization params
+            const int IT_MAX = 1000;
+            const double eps = 1e-4, DT = 1e-1, damp = 1e-6;
 
-            // Desired Pose
-            const pinocchio::SE3 oMdes(orientation, pos);
-
-            // Jacobian
+            // Initial state
+            bool success = false;
+            Eigen::VectorXd q = _q;
+            Eigen::VectorXd v(_model->nv);
+            Eigen::Matrix<double, 6, 1> err;
             pinocchio::Data::Matrix6x J(6, _model->nv);
             J.setZero();
 
-            // Optim params
-            const int IT_MAX = 1000;
-            const double eps = 1e-8, DT = 1e-1, damp = 1e-6;
-
-            // Loop
-            bool success = false;
-            typedef Eigen::Matrix<double, 6, 1> Vector6d;
-            Vector6d err;
-            Eigen::VectorXd v(_model->nv);
-
-            // Init configuration
-            Eigen::VectorXd q = _q;
-
             for (int i = 0;; i++) {
-                // Compute the forward kinematics and update frame placements
-                pinocchio::framesForwardKinematics(*_model, *_data, q);
+                // Update frame
+                pinocchio::forwardKinematics(*_model, *_data, q);
+                pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
 
-                // Compute error between current and desired pose
-                const pinocchio::SE3 dMf = oMdes.actInv(_data->oMf[FRAME_ID]);
-                err = pinocchio::log6(dMf).toVector();
+                // Compute SE3/se3 error
+                const pinocchio::SE3 dMi = oMdes.actInv(_data->oMf[FRAME_ID]);
+                err = pinocchio::log6(dMi).toVector();
 
-                // Check if stopping
+                // Breaking condition
                 if (err.norm() < eps) {
                     success = true;
                     break;
@@ -399,26 +390,29 @@ namespace beautiful_bullet {
                     break;
                 }
 
-                // Compute the jacobian
-                pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, J);
+                pinocchio::computeJointJacobians(*_model, *_data);
+                pinocchio::getFrameJacobian(*_model, *_data, FRAME_ID, pinocchio::LOCAL, J);
 
-                // Calculate damped pseudo-inverse (here why not applying Mantegazza method?)
                 pinocchio::Data::Matrix6 JJt;
                 JJt.noalias() = J * J.transpose();
                 JJt.diagonal().array() += damp;
-
-                // Calculate velocity
                 v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
-
-                if (ref)
-                    v.noalias() += w * (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
-
-                // Calculate configuration
                 q = pinocchio::integrate(*_model, q, v * DT);
-
-                if (!(i % 10))
-                    std::cout << i << ": error = " << err.transpose() << std::endl;
+                // if (!(i % 10))
+                //     std::cout << i << ": error = " << err.transpose() << std::endl;
+                // if (ref) null-space ik
+                //     v.noalias() += w * (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
             }
+
+            if (success) {
+                std::cout << "Convergence achieved!" << std::endl;
+            }
+            else {
+                std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
+            }
+
+            std::cout << "\nresult: " << q.transpose() << std::endl;
+            std::cout << "\nfinal error: " << err.transpose() << std::endl;
 
             return q;
         }
