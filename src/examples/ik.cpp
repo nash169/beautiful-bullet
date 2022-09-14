@@ -45,7 +45,7 @@ Eigen::Matrix3d rotationAlign(const Eigen::Vector3d& u, const Eigen::Vector3d& v
 {
     Eigen::Vector3d k = u.cross(v);
     Eigen::Matrix3d K = skewSymmetric(k);
-    double c = u.dot(v), s = k.norm();
+    double c = u.dot(v);
 
     return Eigen::Matrix3d::Identity() + K + K * K / (1 + c);
 }
