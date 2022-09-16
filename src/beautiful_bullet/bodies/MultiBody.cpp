@@ -129,6 +129,8 @@ namespace beautiful_bullet {
             pinocchio::aba(*_model, *_data, state(), velocity(), _tau);
             return _data->ddq;
         }
+        Eigen::VectorXd MultiBody::accelerationLower() const { return -_model->velocityLimit * 10; }
+        Eigen::VectorXd MultiBody::accelerationUpper() const { return _model->velocityLimit * 10; }
 
         Eigen::VectorXd MultiBody::effort() const { return _tau; }
         Eigen::VectorXd MultiBody::effortLower() const { return -_model->effortLimit; }
@@ -147,9 +149,22 @@ namespace beautiful_bullet {
             return _data->M;
         }
 
+        Eigen::MatrixXd MultiBody::inertiaMatrix(const Eigen::VectorXd& q)
+        {
+            pinocchio::crba(*_model, *_data, q);
+            _data->M.triangularView<Eigen::StrictlyLower>() = _data->M.transpose().triangularView<Eigen::StrictlyLower>();
+            return _data->M;
+        }
+
         Eigen::MatrixXd MultiBody::coriolisMatrix()
         {
             pinocchio::computeCoriolisMatrix(*_model, *_data, _q, _v);
+            return _data->C;
+        }
+
+        Eigen::MatrixXd MultiBody::coriolisMatrix(const Eigen::VectorXd& q, const Eigen::VectorXd& dq)
+        {
+            pinocchio::computeCoriolisMatrix(*_model, *_data, q, dq);
             return _data->C;
         }
 
@@ -159,9 +174,20 @@ namespace beautiful_bullet {
             return _data->g;
         }
 
+        Eigen::VectorXd MultiBody::gravityVector(const Eigen::VectorXd& q)
+        {
+            pinocchio::computeGeneralizedGravity(*_model, *_data, q);
+            return _data->g;
+        }
+
         Eigen::VectorXd MultiBody::nonLinearEffects()
         {
             return pinocchio::nonLinearEffects(*_model, *_data, _q, _v);
+        }
+
+        Eigen::VectorXd MultiBody::nonLinearEffects(const Eigen::VectorXd& q, const Eigen::VectorXd& dq)
+        {
+            return pinocchio::nonLinearEffects(*_model, *_data, q, dq);
         }
 
         Eigen::MatrixXd MultiBody::selectionMatrix()
@@ -184,6 +210,21 @@ namespace beautiful_bullet {
             return J;
         }
 
+        Eigen::MatrixXd MultiBody::jacobian(const Eigen::VectorXd& q, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Init Jacobian
+            pinocchio::Data::Matrix6x J(6, _model->nv);
+            J.setZero();
+
+            // Compute the jacobian
+            pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, J);
+
+            return J;
+        }
+
         Eigen::MatrixXd MultiBody::jacobianDerivative(const std::string& frame)
         {
             // Get frame ID
@@ -195,6 +236,22 @@ namespace beautiful_bullet {
 
             // Compute the jacobian
             pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, _q, _v);
+            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
+
+            return H;
+        }
+
+        Eigen::MatrixXd MultiBody::jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Init Jacobian
+            pinocchio::Data::Matrix6x H(6, _model->nv);
+            H.setZero();
+
+            // Compute the jacobian
+            pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, q, dq);
             pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
 
             return H;
@@ -214,6 +271,20 @@ namespace beautiful_bullet {
             return oMf.translation() + _x;
         }
 
+        Eigen::Vector3d MultiBody::framePosition(const Eigen::VectorXd& q, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, q);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+
+            return oMf.translation() + _x;
+        }
+
         Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame)
         {
             // Get frame ID
@@ -221,6 +292,20 @@ namespace beautiful_bullet {
 
             // Compute the forward kinematics and update frame placements
             pinocchio::framesForwardKinematics(*_model, *_data, _q);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+
+            return oMf.rotation(); // add transformation for orientation base
+        }
+
+        Eigen::Matrix3d MultiBody::frameOrientation(const Eigen::VectorXd& q, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, q);
 
             // Get frame pose
             pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
@@ -243,9 +328,29 @@ namespace beautiful_bullet {
             return (Eigen::Matrix<double, 6, 1>() << oMf.translation() + _x, rot.angle() * rot.axis()).finished(); // add transformation for orientation base
         }
 
+        Eigen::Matrix<double, 6, 1> MultiBody::framePose(const Eigen::VectorXd& q, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, q);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+            Eigen::AngleAxisd rot(oMf.rotation());
+
+            return (Eigen::Matrix<double, 6, 1>() << oMf.translation() + _x, rot.angle() * rot.axis()).finished(); // add transformation for orientation base
+        }
+
         Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame)
         {
             return jacobian(frame) * _v;
+        }
+
+        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const Eigen::VectorXd& dq, const std::string& frame)
+        {
+            return jacobian(frame) * dq;
         }
 
         utils::BulletLoader& MultiBody::loader()

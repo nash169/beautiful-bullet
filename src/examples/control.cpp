@@ -30,6 +30,10 @@
 #include <beautiful_bullet/graphics/MagnumGraphics.hpp>
 #endif
 
+// Spaces
+#include <control_lib/spatial/RN.hpp>
+#include <control_lib/spatial/SE3.hpp>
+
 // Controllers
 #include <control_lib/controllers/Feedback.hpp>
 #include <control_lib/controllers/LinearDynamics.hpp>
@@ -43,21 +47,28 @@ struct Params {
     };
 
     struct feedback : public defaults::feedback {
+        // Output dimension
+        PARAM_SCALAR(size_t, d, 6);
     };
 
     struct linear_dynamics : public defaults::linear_dynamics {
     };
 
     struct quadratic_programming : public defaults::quadratic_programming {
+        // State dimension
+        PARAM_SCALAR(size_t, nP, 7);
+
+        // Control input dimension
+        PARAM_SCALAR(size_t, nC, 7);
+
+        // Slack variable dimension
+        PARAM_SCALAR(size_t, nS, 6);
     };
 };
 
 struct OperationSpaceFeedback : public control::MultiBodyCtr {
     OperationSpaceFeedback(const spatial::SE3& target) : control::MultiBodyCtr(ControlMode::OPERATIONSPACE)
     {
-        // step
-        _dt = 0.01;
-
         // set controlled frame
         _frame = "lbr_iiwa_link_7";
 
@@ -84,85 +95,139 @@ struct OperationSpaceFeedback : public control::MultiBodyCtr {
         return _feedback.setReference(sRef).action(sCurr);
     }
 
-    // step
-    double _dt;
-
     // ds & feedback
     controllers::LinearDynamics<Params, spatial::SE3> _ds;
     controllers::Feedback<Params, spatial::SE3> _feedback;
 };
 
-struct TargetDynamics {
-    TargetDynamics()
+struct ReferenceConfiguration {
+    ReferenceConfiguration()
     {
-        // set ds gains and reference
-        Eigen::MatrixXd A = 0.1 * Eigen::MatrixXd::Identity(6, 6);
-        _ds.setDynamicsMatrix(A);
+        _Kp = 0.01 * Eigen::MatrixXd::Identity(7, 7);
+        _Kd = 0.03 * Eigen::MatrixXd::Identity(7, 7);
+
+        // _eff.setZero(7);
+        // _acc.setZero(7);
+
+        // _ref.setZero(7);
+        _ref << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
     }
 
-    void setTarget(const spatial::SE3& target)
+    size_t dimension() const { return 7; };
+
+    ReferenceConfiguration& setModel(const bodies::MultiBodyPtr& model)
     {
-        _ds.setReference(target);
+        _model = model;
+        return *this;
     }
 
-    void update(const spatial::SE3& curr)
+    void update(const spatial::RN<7>& state)
     {
-        _ds.update(curr);
+        _acc = _Kp * (_ref - state._pos) - _Kd * state._vel;
+        _eff = _model->nonLinearEffects(state._pos, state._vel);
     }
 
-    const Eigen::VectorXd& velocity() const
-    {
-        return _ds.output();
-    }
+    const Eigen::Matrix<double, 7, 1>& acceleration() const { return _acc; }
 
-    controllers::LinearDynamics<Params, spatial::SE3> _ds;
+    const Eigen::Matrix<double, 7, 1>& effort() const { return _eff; }
+
+protected:
+    bodies::MultiBodyPtr _model;
+    Eigen::Matrix<double, 7, 1> _ref, _acc, _eff;
+    Eigen::MatrixXd _Kp, _Kd;
 };
 
 struct ConfigurationSpaceQP : public control::MultiBodyCtr {
-    ConfigurationSpaceQP(const spatial::SE3& target) : control::MultiBodyCtr(ControlMode::CONFIGURATIONSPACE)
+    ConfigurationSpaceQP(const bodies::MultiBodyPtr& model, const spatial::SE3& target) : control::MultiBodyCtr(ControlMode::CONFIGURATIONSPACE)
     {
         // step
-        _dt = 0.01;
+        _dt = 0.1;
 
         // set controlled frame
         _frame = "lbr_iiwa_link_7";
 
+        // Robot state
+        spatial::RN<7> state;
+        state._pos = model->state();
+        state._vel = model->velocity();
+        state._acc = model->acceleration();
+        state._eff = model->effort();
+
+        // Task state
+        spatial::SE3 pose(model->frameOrientation(), model->framePosition());
+
         // set ds
-        _ds.setTarget(target);
+        Eigen::MatrixXd A = 1 * Eigen::MatrixXd::Identity(6, 6);
+        _ds
+            .setDynamicsMatrix(A)
+            .setReference(target)
+            .update(pose);
+
+        // set ref tracking
+        _ref
+            .setModel(model)
+            .update(state);
 
         // set qp
-        Eigen::MatrixXd Q = 1 * Eigen::MatrixXd::Identity(7, 7),
-                        R = 0.1 * Eigen::MatrixXd::Identity(7, 7);
-        _qp
-            .setDimensions(7, 6)
-            .energyMinimization(Q)
-            .controlSaturation(R);
+        Eigen::MatrixXd Q = 50 * Eigen::MatrixXd::Identity(7, 7),
+                        Qt = 10 * Eigen::MatrixXd::Identity(7, 7),
+                        R = 1 * Eigen::MatrixXd::Identity(7, 7),
+                        Rt = 0.5 * Eigen::MatrixXd::Identity(7, 7),
+                        W = 0 * Eigen::MatrixXd::Identity(6, 6);
+        // W.diagonal() << 10, 10, 10, 5, 5, 5;
+
+        _qp.setModel(model)
+            .accelerationMinimization(Q)
+            // .accelerationTracking(Qt, _ref)
+            .effortMinimization(R)
+            .effortTracking(Rt, _ref)
+            .slackVariable(W)
+            .modelDynamics(state)
+            // .inverseKinematics(state, _ds)
+            .init();
     }
 
     Eigen::VectorXd action(bodies::MultiBody& body) override
     {
-        // reference state
+        // task state
         spatial::SE3 sCurr(body.framePose(_frame));
+
+        // robot state
+        spatial::RN<7> state;
+        state._pos = body.state();
+        state._vel = body.velocity();
+        state._acc = body.acceleration();
+        state._eff = body.effort();
+
+        // update ds
         _ds.update(sCurr);
 
-        // update qp
-        _qp
-            .modelDynamics(body)
-            // .positionLimits(body)
-            // .velocityLimits(body)
-            // .effortLimits(body)
-            // .inverseKinematics(body, _ds)
-            .init();
+        // update robot tracker
+        _ref.update(state);
 
-        return _qp.action(sCurr);
+        // std::cout << "reference" << std::endl;
+        // // std::cout << _ref.acceleration().transpose() << std::endl;
+        // // std::cout << _ref.effort().transpose() << std::endl;
+        // std::cout << _ds.velocity().transpose() << std::endl;
+
+        // auto u = _qp.action(state);
+
+        // std::cout << "=====" << std::endl;
+
+        return _qp.action(state);
     }
 
     // step
     double _dt;
 
-    // ds & feedback
-    TargetDynamics _ds;
-    controllers::QuadraticProgramming<Params, spatial::SE3> _qp;
+    // ds
+    controllers::LinearDynamics<Params, spatial::SE3> _ds;
+
+    // reference configuration
+    ReferenceConfiguration _ref;
+
+    // qp
+    controllers::QuadraticProgramming<Params, bodies::MultiBody> _qp;
 };
 
 int main(int argc, char const* argv[])
@@ -183,16 +248,18 @@ int main(int argc, char const* argv[])
                          iiwa = std::make_shared<bodies::MultiBody>("models/iiwa/urdf/iiwa14.urdf");
 
     // Task space target
-    Eigen::Vector3d xDes(0.365308, -1.0810892, 1.13717);
+    Eigen::Vector3d xDes(0.365308, -0.0810892, 1.13717);
     Eigen::Matrix3d oDes = (Eigen::Matrix3d() << 0.591427, -0.62603, 0.508233, 0.689044, 0.719749, 0.0847368, -0.418848, 0.300079, 0.857041).finished();
     spatial::SE3 tDes(oDes, xDes);
 
+    Eigen::VectorXd q_ref = (Eigen::Matrix<double, 7, 1>() << 0, 0, 0, -M_PI / 4, 0, M_PI / 4, 0).finished();
     // Set controlled robot
     (*iiwaBullet)
-        .setPosition(0, -1, 0)
+        .setState(q_ref)
+        // .setPosition(0, -1, 0)
         // .addControllers(std::make_unique<OperationSpaceFeedback>(tDes))
-        .addControllers(std::make_unique<ConfigurationSpaceQP>(tDes))
-        .activateGravity();
+        .addControllers(std::make_unique<ConfigurationSpaceQP>(iiwaBullet, tDes));
+    // .activateGravity();
 
     // Reference configuration
     Eigen::VectorXd state(7);
@@ -201,7 +268,7 @@ int main(int argc, char const* argv[])
     // Set reference robot
     (*iiwa)
         .setState(state)
-        .setPosition(0, 1, 0)
+        .setPosition(0, 2, 0)
         .activateGravity();
 
     // Add robots and run simulation

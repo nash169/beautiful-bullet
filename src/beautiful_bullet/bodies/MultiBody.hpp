@@ -55,6 +55,8 @@ namespace beautiful_bullet {
             // Destroyer (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
             ~MultiBody();
 
+            size_t dimension() const { return _body->getNumDofs(); }
+
             /* Get multibody pointer */
             btMultiBody* body();
 
@@ -70,6 +72,8 @@ namespace beautiful_bullet {
 
             /* Get multibody joint state second derivative */
             Eigen::VectorXd acceleration();
+            Eigen::VectorXd accelerationLower() const;
+            Eigen::VectorXd accelerationUpper() const;
 
             /* Get multibody joint torques */
             Eigen::VectorXd effort() const;
@@ -79,20 +83,38 @@ namespace beautiful_bullet {
 
             /* Get Dynamics */
             Eigen::MatrixXd inertiaMatrix();
+            Eigen::MatrixXd inertiaMatrix(const Eigen::VectorXd& q);
+
             Eigen::MatrixXd coriolisMatrix();
+            Eigen::MatrixXd coriolisMatrix(const Eigen::VectorXd& q, const Eigen::VectorXd& dq);
+
             Eigen::VectorXd gravityVector();
+            Eigen::VectorXd gravityVector(const Eigen::VectorXd& q);
+
             Eigen::VectorXd nonLinearEffects();
+            Eigen::VectorXd nonLinearEffects(const Eigen::VectorXd& q, const Eigen::VectorXd& dq);
+
             Eigen::MatrixXd selectionMatrix();
 
             /*Get Jacobian & Jacobian derivative*/
             Eigen::MatrixXd jacobian(const std::string& frame = "");
+            Eigen::MatrixXd jacobian(const Eigen::VectorXd& q, const std::string& frame = "");
+
             Eigen::MatrixXd jacobianDerivative(const std::string& frame = "");
+            Eigen::MatrixXd jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "");
 
             /* Get frame */
             Eigen::Vector3d framePosition(const std::string& frame = "");
+            Eigen::Vector3d framePosition(const Eigen::VectorXd& q, const std::string& frame = "");
+
             Eigen::Matrix3d frameOrientation(const std::string& frame = "");
+            Eigen::Matrix3d frameOrientation(const Eigen::VectorXd& q, const std::string& frame = "");
+
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
+            Eigen::Matrix<double, 6, 1> framePose(const Eigen::VectorXd& q, const std::string& frame = "");
+
             Eigen::Matrix<double, 6, 1> frameVelocity(const std::string& frame = "");
+            Eigen::Matrix<double, 6, 1> frameVelocity(const Eigen::VectorXd& dq, const std::string& frame = "");
 
             /* Get Bullet loader */
             utils::BulletLoader& loader();
