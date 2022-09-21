@@ -62,12 +62,15 @@ int main(int argc, char const* argv[])
     Eigen::Vector3d trans = pose.translation();
     Eigen::Matrix3d rot = pose.rotation();
 
-    // Compare
-    std::cout << "Jacobian derivation" << std::endl;
-    std::cout << (J * v).transpose() << std::endl;
+    std::cout << trans.transpose() << std::endl;
+    std::cout << rot.transpose() << std::endl;
 
-    std::cout << "Lie Algebra derivation" << std::endl;
-    std::cout << pinocchio::log6(pose).toVector().transpose() << std::endl;
+    // // Compare
+    // std::cout << "Jacobian derivation" << std::endl;
+    // std::cout << (J * v).transpose() << std::endl;
+
+    // std::cout << "Lie Algebra derivation" << std::endl;
+    // std::cout << pinocchio::log6(pose).toVector().transpose() << std::endl;
 
     return 0;
 }

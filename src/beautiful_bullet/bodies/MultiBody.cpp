@@ -205,7 +205,11 @@ namespace beautiful_bullet {
             J.setZero();
 
             // Compute the jacobian
-            pinocchio::computeFrameJacobian(*_model, *_data, _q, FRAME_ID, J);
+            // pinocchio::forwardKinematics(*_model, *_data, _q);
+            // pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
+            // pinocchio::computeJointJacobians(*_model, *_data);
+            // pinocchio::getFrameJacobian(*_model, *_data, FRAME_ID, pinocchio::LOCAL, J);
+            pinocchio::computeFrameJacobian(*_model, *_data, _q, FRAME_ID, pinocchio::LOCAL, J);
 
             return J;
         }
@@ -220,7 +224,11 @@ namespace beautiful_bullet {
             J.setZero();
 
             // Compute the jacobian
-            pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, J);
+            // pinocchio::forwardKinematics(*_model, *_data, q);
+            // pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
+            // pinocchio::computeJointJacobians(*_model, *_data);
+            // pinocchio::getFrameJacobian(*_model, *_data, FRAME_ID, pinocchio::LOCAL, J);
+            pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, pinocchio::LOCAL, J);
 
             return J;
         }
@@ -236,7 +244,7 @@ namespace beautiful_bullet {
 
             // Compute the jacobian
             pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, _q, _v);
-            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
+            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::WORLD, H);
 
             return H;
         }
