@@ -44,7 +44,7 @@ namespace beautiful_bullet {
             MultiBody(const std::string& file, int flags = 0);
 
             // Default constructor
-            MultiBody() = default;
+            MultiBody();
 
             // Move constructor
             MultiBody(MultiBody&& other) noexcept;
@@ -52,7 +52,7 @@ namespace beautiful_bullet {
             // No copy constructor (check explicit and default)
             MultiBody(const MultiBody&) = delete;
 
-            // Destroyer (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
+            // Destroyer (try to move towards raw or unique_ptr)
             ~MultiBody();
 
             size_t dimension() const { return _body->getNumDofs(); }
@@ -95,6 +95,7 @@ namespace beautiful_bullet {
             Eigen::VectorXd nonLinearEffects(const Eigen::VectorXd& q, const Eigen::VectorXd& dq);
 
             Eigen::MatrixXd selectionMatrix();
+            Eigen::MatrixXd selectionMatrix(const Eigen::VectorXd& tau);
 
             /*Get Jacobian & Jacobian derivative*/
             Eigen::MatrixXd jacobian(const std::string& frame = "");
@@ -114,10 +115,13 @@ namespace beautiful_bullet {
             Eigen::Matrix<double, 6, 1> framePose(const Eigen::VectorXd& q, const std::string& frame = "");
 
             Eigen::Matrix<double, 6, 1> frameVelocity(const std::string& frame = "");
-            Eigen::Matrix<double, 6, 1> frameVelocity(const Eigen::VectorXd& dq, const std::string& frame = "");
+            Eigen::Matrix<double, 6, 1> frameVelocity(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "");
 
             /* Get Bullet loader */
             utils::BulletLoader& loader();
+
+            /* Load body from file */
+            MultiBody& loadBody(const std::string& file, int flags = 0);
 
             /* Set multibody */
             MultiBody& setBody(btMultiBody* body);
