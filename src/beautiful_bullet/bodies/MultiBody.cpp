@@ -194,7 +194,8 @@ namespace beautiful_bullet {
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
             // Compute the forward kinematics and update frame placements
-            pinocchio::framesForwardKinematics(*_model, *_data, q);
+            pinocchio::forwardKinematics(*_model, *_data, q);
+            pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
 
             // Get frame pose
             pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
