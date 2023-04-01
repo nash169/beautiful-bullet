@@ -25,7 +25,8 @@
 
 import os
 
-required = {"simulation.cpp": ["UTILSLIB"]}
+required = {"inverse_kinematics.cpp": [
+    "GRAPHICSLIB"], "simulation.cpp": ["UTILSLIB"]}
 optional = {"simulation.cpp": ["GRAPHICSLIB"]}
 
 
