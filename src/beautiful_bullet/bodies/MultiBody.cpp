@@ -84,7 +84,7 @@ namespace beautiful_bullet {
             other._controllers.shrink_to_fit();
         }
 
-        MultiBody::~MultiBody() // (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
+        MultiBody::~MultiBody() // (not needed because of smart pointer; try to move towards raw or unique_ptr)
         {
             _controllers.clear();
             _controllers.shrink_to_fit();
@@ -158,7 +158,7 @@ namespace beautiful_bullet {
         Eigen::VectorXd MultiBody::nonLinearEffects() { return nonLinearEffects(_q, _v); }
         Eigen::MatrixXd MultiBody::selectionMatrix() { return selectionMatrix(_tau); }
 
-        Eigen::MatrixXd MultiBody::jacobian(const Eigen::VectorXd& q, const std::string& frame)
+        Eigen::MatrixXd MultiBody::jacobian(const Eigen::VectorXd& q, const std::string& frame, const pinocchio::ReferenceFrame& rf)
         {
             // Get frame ID
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
@@ -167,7 +167,7 @@ namespace beautiful_bullet {
             pinocchio::Data::Matrix6x J(6, _model->nv);
             J.setZero();
 
-            pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, pinocchio::LOCAL, J);
+            pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, rf, J);
 
             return J;
         }
@@ -237,7 +237,7 @@ namespace beautiful_bullet {
             return jacobian(q, frame) * dq;
         }
 
-        Eigen::MatrixXd MultiBody::jacobian(const std::string& frame) { return jacobian(_q, frame); }
+        Eigen::MatrixXd MultiBody::jacobian(const std::string& frame, const pinocchio::ReferenceFrame& rf) { return jacobian(_q, frame, rf); }
         Eigen::MatrixXd MultiBody::jacobianDerivative(const std::string& frame) { return jacobianDerivative(_q, _v, frame); }
         Eigen::Vector3d MultiBody::framePosition(const std::string& frame) { return framePosition(_q, frame); }
         Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame) { return frameOrientation(_q, frame); }

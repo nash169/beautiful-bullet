@@ -98,8 +98,8 @@ namespace beautiful_bullet {
             Eigen::MatrixXd selectionMatrix(const Eigen::VectorXd& tau);
 
             /*Get Jacobian & Jacobian derivative*/
-            Eigen::MatrixXd jacobian(const std::string& frame = "");
-            Eigen::MatrixXd jacobian(const Eigen::VectorXd& q, const std::string& frame = "");
+            Eigen::MatrixXd jacobian(const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
+            Eigen::MatrixXd jacobian(const Eigen::VectorXd& q, const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
 
             Eigen::MatrixXd jacobianDerivative(const std::string& frame = "");
             Eigen::MatrixXd jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "");
