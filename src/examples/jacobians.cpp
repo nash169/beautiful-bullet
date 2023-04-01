@@ -29,6 +29,8 @@
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/parsers/urdf.hpp>
 
+#include <control_lib/spatial/SE3.hpp>
+
 int main(int argc, char const* argv[])
 {
     pinocchio::Model model;
@@ -88,6 +90,18 @@ int main(int argc, char const* argv[])
 
     std::cout << "Jacobian pose: " << (J3 * (q - Eigen::VectorXd::Zero(7))).transpose() << std::endl;
     std::cout << "se3 pose: " << pinocchio::log6(endPose.actInv(initPose)).toVector().transpose() << std::endl;
+
+    control_lib::spatial::SE3 init_pose(initPose.rotation(), initPose.translation()), end_pose(endPose.rotation(), endPose.translation());
+
+    auto tmp1 = endPose.actInv(initPose);
+    auto tmp2 = end_pose.actionInverse(init_pose);
+
+    // std::cout << tmp1.translation().transpose() << std::endl;
+    // std::cout << tmp1.rotation() << std::endl;
+
+    // std::cout << tmp2._trans.transpose() << std::endl;
+    // std::cout << tmp2._rot << std::endl;
+    std::cout << tmp2.log().transpose() << std::endl;
 
     return 0;
 }
