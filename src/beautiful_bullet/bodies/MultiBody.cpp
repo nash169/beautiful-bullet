@@ -430,15 +430,15 @@ namespace beautiful_bullet {
                 //     v.noalias() += w * (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
             }
 
-            if (success) {
-                std::cout << "Convergence achieved!" << std::endl;
-            }
-            else {
-                std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
-            }
+            // if (success) {
+            //     std::cout << "Convergence achieved!" << std::endl;
+            // }
+            // else {
+            //     std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
+            // }
 
-            std::cout << "\nresult: " << q.transpose() << std::endl;
-            std::cout << "\nfinal error: " << err.transpose() << std::endl;
+            // std::cout << "\nresult: " << q.transpose() << std::endl;
+            // std::cout << "\nfinal error: " << err.transpose() << std::endl;
 
             return q;
         }
