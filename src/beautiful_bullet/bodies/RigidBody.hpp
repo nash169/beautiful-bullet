@@ -25,6 +25,7 @@
 #ifndef BEAUTIFULBULLET_BODIES_RIGIDBODY_HPP
 #define BEAUTIFULBULLET_BODIES_RIGIDBODY_HPP
 
+#include "beautiful_bullet/common/pointers.hpp"
 #include "beautiful_bullet/control/RigidBody.h"
 
 #include <BulletCollision/btBulletCollisionCommon.h>
@@ -213,8 +214,9 @@ namespace beautiful_bullet {
             // Create Rigid Body
             btRigidBody* createRigidBody(const btScalar& mass, const btTransform& transform, btCollisionShape* shape);
         };
-    } // namespace bodies
 
+        COMMON_DECLARE_SHARED(RigidBody)
+    } // namespace bodies
 } // namespace beautiful_bullet
 
 #endif // BEAUTIFULBULLET_BODIES_RIGIDBODY_HPP

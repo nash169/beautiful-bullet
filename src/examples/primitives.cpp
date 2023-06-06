@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     // Add ground
     simulator.addGround();
 
-    // Rigid Bodies
+    // Rigid Bodies Params
     bodies::BoxParams boxParams;
     boxParams.setSize(0.5, 0.5, 0.5).setMass(0.1).setFriction(0.5).setColor("red");
 
@@ -58,14 +58,21 @@ int main(int argc, char** argv)
     bodies::CapsuleParams paramsCapsule;
     paramsCapsule.setRadius(0.5).setHeight(0.5).setMass(0.1).setFriction(0.5).setColor("yellow");
 
-    bodies::RigidBody cube("box", boxParams), sphere("sphere", paramsSphere), cylinder("cylinder", paramsCylinder), capsule("capsule", paramsCapsule);
+    // Rigid Bodies
+    bodies::RigidBodyPtr cube = std::make_shared<bodies::RigidBody>("box", boxParams),
+                         sphere = std::make_shared<bodies::RigidBody>("sphere", paramsSphere),
+                         cylinder = std::make_shared<bodies::RigidBody>("cylinder", paramsCylinder),
+                         capsule = std::make_shared<bodies::RigidBody>("capsule", paramsCapsule);
+
+    cube->setPosition(0, 2, 3);
+    sphere->setPosition(0, -2, 3);
+    cylinder->setPosition(0, 0, 0.5)
+        .setOrientation(M_PI / 2, 0, 0);
+    capsule->setPosition(-2, 0, 2)
+        .setOrientation(0, M_PI / 2, 0);
 
     // Add object to simulator
-    simulator.add(
-        cube.setPosition(0, 2, 3),
-        sphere.setPosition(0, -2, 3),
-        cylinder.setPosition(0, 0, 0.5).setOrientation(M_PI / 2, 0, 0),
-        capsule.setPosition(-2, 0, 2).setOrientation(0, M_PI / 2, 0));
+    simulator.add(cube, sphere, cylinder, capsule);
 
     // Run simulation
     simulator.run();

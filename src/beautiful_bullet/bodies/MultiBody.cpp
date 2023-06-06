@@ -37,34 +37,15 @@
 
 namespace beautiful_bullet {
     namespace bodies {
-        MultiBody::MultiBody(const std::string& file, int flags)
+        MultiBody::MultiBody()
         {
-            // Get multibody
-            _body = _loader.parseMultiBody(file, flags);
-
-            // Init agent internal state variable
-            _x.setZero();
-            _r.setIdentity();
-            _q.setZero(_body->getNumDofs());
-            _v.setZero(_body->getNumDofs());
-            _tau.setZero(_body->getNumDofs());
-
-            // Store inertia frame of the root node
-            // (not keeping track of it at the moment)
-            _rootFrame = _body->getBaseWorldTransform();
-
-            // Pinocchio model
-            _model = new pinocchio::Model();
-            pinocchio::urdf::buildModel(file, *_model);
-
-            // Pinocchio data
-            _data = new pinocchio::Data(*_model);
-
-            // Update pinocchio forward kinematics
-            pinocchio::forwardKinematics(*_model, *_data, _q, _v);
-
-            // Default no gravity compensation
+            // Gravity compensation off
             _gravity = false;
+        }
+
+        MultiBody::MultiBody(const std::string& file, int flags) : MultiBody()
+        {
+            loadBody(file, flags);
         }
 
         MultiBody::MultiBody(MultiBody&& other) noexcept
@@ -103,7 +84,7 @@ namespace beautiful_bullet {
             other._controllers.shrink_to_fit();
         }
 
-        MultiBody::~MultiBody() // (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
+        MultiBody::~MultiBody() // (not needed because of smart pointer; try to move towards raw or unique_ptr)
         {
             _controllers.clear();
             _controllers.shrink_to_fit();
@@ -113,76 +94,28 @@ namespace beautiful_bullet {
             delete _model;
         }
 
-        btMultiBody* MultiBody::body()
-        {
-            return _body;
-        }
+        btMultiBody* MultiBody::body() { return _body; }
 
-        const Eigen::VectorXd& MultiBody::state() const
-        {
-            return _q;
-        }
+        Eigen::VectorXd MultiBody::state() const { return _q; }
+        Eigen::VectorXd MultiBody::positionLower() const { return _model->lowerPositionLimit; }
+        Eigen::VectorXd MultiBody::positionUpper() const { return _model->upperPositionLimit; }
 
-        const Eigen::VectorXd& MultiBody::upperLimits() const // using pinocchio for the moment because Bullet is bad
-        {
-            return _model->upperPositionLimit;
-        }
-
-        const Eigen::VectorXd& MultiBody::lowerLimits() const
-        {
-            return _model->lowerPositionLimit;
-        }
-
-        const Eigen::VectorXd& MultiBody::velocity() const
-        {
-            return _v;
-        }
-
-        const Eigen::VectorXd& MultiBody::velocityLimits() const
-        {
-            return _model->velocityLimit;
-        }
+        Eigen::VectorXd MultiBody::velocity() const { return _v; }
+        Eigen::VectorXd MultiBody::velocityLower() const { return -_model->velocityLimit; }
+        Eigen::VectorXd MultiBody::velocityUpper() const { return _model->velocityLimit; }
 
         Eigen::VectorXd MultiBody::acceleration()
         {
             // Using pinocchio to compute the forward dynamics
-            pinocchio::aba(*_model, *_data, state(), velocity(), _tau);
+            pinocchio::aba(*_model, *_data, _q, _v, _tau);
             return _data->ddq;
         }
+        Eigen::VectorXd MultiBody::accelerationLower() const { return -_model->velocityLimit * 10; }
+        Eigen::VectorXd MultiBody::accelerationUpper() const { return _model->velocityLimit * 10; }
 
-        const Eigen::VectorXd& MultiBody::torques() const
-        {
-            return _tau;
-        }
-
-        const Eigen::VectorXd& MultiBody::torquesLimits() const
-        {
-            return _model->effortLimit;
-        }
-
-        Eigen::MatrixXd MultiBody::inertiaMatrix()
-        {
-            pinocchio::crba(*_model, *_data, _q);
-            _data->M.triangularView<Eigen::StrictlyLower>() = _data->M.transpose().triangularView<Eigen::StrictlyLower>();
-            return _data->M;
-        }
-
-        Eigen::MatrixXd MultiBody::coriolisMatrix()
-        {
-            pinocchio::computeCoriolisMatrix(*_model, *_data, _q, _v);
-            return _data->C;
-        }
-
-        Eigen::VectorXd MultiBody::gravityVector()
-        {
-            pinocchio::computeGeneralizedGravity(*_model, *_data, _q);
-            return _data->g;
-        }
-
-        Eigen::VectorXd MultiBody::nonLinearEffects()
-        {
-            return pinocchio::nonLinearEffects(*_model, *_data, _q, _v);
-        }
+        Eigen::VectorXd MultiBody::effort() const { return _tau; }
+        Eigen::VectorXd MultiBody::effortLower() const { return -_model->effortLimit; }
+        Eigen::VectorXd MultiBody::effortUpper() const { return _model->effortLimit; }
 
         Eigen::VectorXd MultiBody::inverseDynamics(const Eigen::VectorXd& ddq)
         {
@@ -190,55 +123,42 @@ namespace beautiful_bullet {
             return _data->tau;
         }
 
-        Eigen::Vector3d MultiBody::framePosition(const std::string& frame)
+        Eigen::MatrixXd MultiBody::inertiaMatrix(const Eigen::VectorXd& q)
         {
-            // Get frame ID
-            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
-
-            // Compute the forward kinematics and update frame placements
-            pinocchio::framesForwardKinematics(*_model, *_data, _q);
-
-            // Get frame pose
-            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
-
-            return oMf.translation() + _x;
+            pinocchio::crba(*_model, *_data, q);
+            _data->M.triangularView<Eigen::StrictlyLower>() = _data->M.transpose().triangularView<Eigen::StrictlyLower>();
+            return _data->M;
         }
 
-        Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame)
+        Eigen::MatrixXd MultiBody::coriolisMatrix(const Eigen::VectorXd& q, const Eigen::VectorXd& dq)
         {
-            // Get frame ID
-            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
-
-            // Compute the forward kinematics and update frame placements
-            pinocchio::framesForwardKinematics(*_model, *_data, _q);
-
-            // Get frame pose
-            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
-
-            return oMf.rotation(); // add transformation for orientation base
+            pinocchio::computeCoriolisMatrix(*_model, *_data, q, dq);
+            return _data->C;
         }
 
-        Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame)
+        Eigen::VectorXd MultiBody::gravityVector(const Eigen::VectorXd& q)
         {
-            // Get frame ID
-            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
-
-            // Compute the forward kinematics and update frame placements
-            pinocchio::framesForwardKinematics(*_model, *_data, _q);
-
-            // Get frame pose
-            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
-            Eigen::AngleAxisd rot(oMf.rotation());
-
-            return (Eigen::Matrix<double, 6, 1>() << oMf.translation() + _x, rot.angle() * rot.axis()).finished(); // add transformation for orientation base
+            pinocchio::computeGeneralizedGravity(*_model, *_data, q);
+            return _data->g;
         }
 
-        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame)
+        Eigen::VectorXd MultiBody::nonLinearEffects(const Eigen::VectorXd& q, const Eigen::VectorXd& dq)
         {
-            return jacobian(frame) * _v;
+            return pinocchio::nonLinearEffects(*_model, *_data, q, dq);
         }
 
-        Eigen::MatrixXd MultiBody::jacobian(const std::string& frame)
+        Eigen::MatrixXd MultiBody::selectionMatrix(const Eigen::VectorXd& tau)
+        {
+            return Eigen::MatrixXd::Identity(tau.size(), tau.size());
+        }
+
+        Eigen::MatrixXd MultiBody::inertiaMatrix() { return inertiaMatrix(_q); }
+        Eigen::MatrixXd MultiBody::coriolisMatrix() { return coriolisMatrix(_q, _v); }
+        Eigen::VectorXd MultiBody::gravityVector() { return gravityVector(_q); }
+        Eigen::VectorXd MultiBody::nonLinearEffects() { return nonLinearEffects(_q, _v); }
+        Eigen::MatrixXd MultiBody::selectionMatrix() { return selectionMatrix(_tau); }
+
+        Eigen::MatrixXd MultiBody::jacobian(const Eigen::VectorXd& q, const std::string& frame, const pinocchio::ReferenceFrame& rf)
         {
             // Get frame ID
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
@@ -247,13 +167,12 @@ namespace beautiful_bullet {
             pinocchio::Data::Matrix6x J(6, _model->nv);
             J.setZero();
 
-            // Compute the jacobian
-            pinocchio::computeFrameJacobian(*_model, *_data, _q, FRAME_ID, J);
+            pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, rf, J);
 
             return J;
         }
 
-        Eigen::MatrixXd MultiBody::hessian(const std::string& frame)
+        Eigen::MatrixXd MultiBody::jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame)
         {
             // Get frame ID
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
@@ -263,10 +182,101 @@ namespace beautiful_bullet {
             H.setZero();
 
             // Compute the jacobian
-            pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, _q, _v);
+            pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, q, dq);
             pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
 
             return H;
+        }
+
+        Eigen::Vector3d MultiBody::framePosition(const Eigen::VectorXd& q, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::forwardKinematics(*_model, *_data, q);
+            pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+
+            return oMf.translation() + _x;
+        }
+
+        Eigen::Matrix3d MultiBody::frameOrientation(const Eigen::VectorXd& q, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, q);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+
+            return oMf.rotation(); // add transformation for orientation base
+        }
+
+        Eigen::Matrix<double, 6, 1> MultiBody::framePose(const Eigen::VectorXd& q, const std::string& frame)
+        {
+            // Get frame ID
+            const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
+
+            // Compute the forward kinematics and update frame placements
+            pinocchio::framesForwardKinematics(*_model, *_data, q);
+
+            // Get frame pose
+            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+            Eigen::AngleAxisd rot(oMf.rotation());
+
+            return (Eigen::Matrix<double, 6, 1>() << oMf.translation() + _x, rot.angle() * rot.axis()).finished(); // add transformation for orientation base
+        }
+
+        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame)
+        {
+            return jacobian(q, frame) * dq;
+        }
+
+        Eigen::MatrixXd MultiBody::jacobian(const std::string& frame, const pinocchio::ReferenceFrame& rf) { return jacobian(_q, frame, rf); }
+        Eigen::MatrixXd MultiBody::jacobianDerivative(const std::string& frame) { return jacobianDerivative(_q, _v, frame); }
+        Eigen::Vector3d MultiBody::framePosition(const std::string& frame) { return framePosition(_q, frame); }
+        Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame) { return frameOrientation(_q, frame); }
+        Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame) { return framePose(_q, frame); }
+        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame) { return frameVelocity(_q, _v, frame); }
+
+        utils::BulletLoader& MultiBody::loader()
+        {
+            return _loader;
+        }
+
+        MultiBody& MultiBody::loadBody(const std::string& file, int flags)
+        {
+            // Get multibody
+            _body = _loader.parseMultiBody(file, flags);
+
+            // Init agent internal state variable
+            _q.setZero(_body->getNumDofs());
+            _v.setZero(_body->getNumDofs());
+            _tau.setZero(_body->getNumDofs());
+
+            // Store inertia frame of the root node
+            // (not keeping track of it at the moment)
+            _rootFrame = _body->getBaseWorldTransform();
+            _x.setZero();
+            // _x = Eigen::Map<Eigen::Vector3f>(static_cast<float*>(_rootFrame.getOrigin().m_floats));
+            _r.setIdentity();
+
+            // Pinocchio model
+            _model = new pinocchio::Model();
+            pinocchio::urdf::buildModel(file, *_model);
+
+            // Pinocchio data
+            _data = new pinocchio::Data(*_model);
+
+            // Update pinocchio forward kinematics
+            pinocchio::forwardKinematics(*_model, *_data, _q, _v);
+
+            return *this;
         }
 
         MultiBody& MultiBody::setBody(btMultiBody* body) // (remember to init state here)
@@ -367,45 +377,36 @@ namespace beautiful_bullet {
         }
 
         /* Inverse Kinematics */
-        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame, const Eigen::VectorXd* ref, const double& w)
+        Eigen::VectorXd MultiBody::inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame) // const Eigen::VectorXd* ref, const double& w
         {
+            // Frame ID
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
-            Eigen::Vector3d pos = position;
-            for (size_t i = 0; i < 3; i++)
-                pos[i] -= _body->getBasePos()[i];
+            // Target SE3
+            const pinocchio::SE3 oMdes(orientation, position);
 
-            std::cout << pos.transpose() << std::endl;
+            // Optimization params
+            const int IT_MAX = 1000;
+            const double eps = 1e-4, DT = 1e-1, damp = 1e-6;
 
-            // Desired Pose
-            const pinocchio::SE3 oMdes(orientation, pos);
-
-            // Jacobian
+            // Initial state
+            bool success = false;
+            Eigen::VectorXd q = _q;
+            Eigen::VectorXd v(_model->nv);
+            Eigen::Matrix<double, 6, 1> err;
             pinocchio::Data::Matrix6x J(6, _model->nv);
             J.setZero();
 
-            // Optim params
-            const int IT_MAX = 1000;
-            const double eps = 1e-8, DT = 1e-1, damp = 1e-6;
-
-            // Loop
-            bool success = false;
-            typedef Eigen::Matrix<double, 6, 1> Vector6d;
-            Vector6d err;
-            Eigen::VectorXd v(_model->nv);
-
-            // Init configuration
-            Eigen::VectorXd q = _q;
-
             for (int i = 0;; i++) {
-                // Compute the forward kinematics and update frame placements
-                pinocchio::framesForwardKinematics(*_model, *_data, q);
+                // Update frame
+                pinocchio::forwardKinematics(*_model, *_data, q);
+                pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
 
-                // Compute error between current and desired pose
-                const pinocchio::SE3 dMf = oMdes.actInv(_data->oMf[FRAME_ID]);
-                err = pinocchio::log6(dMf).toVector();
+                // Compute SE3/se3 error
+                const pinocchio::SE3 dMi = oMdes.actInv(_data->oMf[FRAME_ID]);
+                err = pinocchio::log6(dMi).toVector();
 
-                // Check if stopping
+                // Breaking condition
                 if (err.norm() < eps) {
                     success = true;
                     break;
@@ -415,26 +416,29 @@ namespace beautiful_bullet {
                     break;
                 }
 
-                // Compute the jacobian
-                pinocchio::computeFrameJacobian(*_model, *_data, q, FRAME_ID, J);
+                pinocchio::computeJointJacobians(*_model, *_data);
+                pinocchio::getFrameJacobian(*_model, *_data, FRAME_ID, pinocchio::LOCAL, J);
 
-                // Calculate damped pseudo-inverse (here why not applying Mantegazza method?)
                 pinocchio::Data::Matrix6 JJt;
                 JJt.noalias() = J * J.transpose();
                 JJt.diagonal().array() += damp;
-
-                // Calculate velocity
                 v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
-
-                if (ref)
-                    v.noalias() += w * (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
-
-                // Calculate configuration
                 q = pinocchio::integrate(*_model, q, v * DT);
-
-                if (!(i % 10))
-                    std::cout << i << ": error = " << err.transpose() << std::endl;
+                // if (!(i % 10))
+                //     std::cout << i << ": error = " << err.transpose() << std::endl;
+                // if (ref) null-space ik
+                //     v.noalias() += w * (Eigen::MatrixXd::Identity(_model->nv, _model->nv) - tools::pseudoInverse(J) * J) * (*ref - q);
             }
+
+            // if (success) {
+            //     std::cout << "Convergence achieved!" << std::endl;
+            // }
+            // else {
+            //     std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
+            // }
+
+            // std::cout << "\nresult: " << q.transpose() << std::endl;
+            // std::cout << "\nfinal error: " << err.transpose() << std::endl;
 
             return q;
         }
@@ -472,6 +476,16 @@ namespace beautiful_bullet {
                 // Apply force
                 _body->addJointTorque(i, _tau(i));
             }
+        }
+
+        inline void MultiBody::clipForce(const int& index, double& force)
+        {
+            double maxForce = _body->getLink(index).m_jointMaxForce;
+
+            if (force >= maxForce)
+                force = maxForce;
+            else if (force <= -maxForce)
+                force = -maxForce;
         }
     } // namespace bodies
 } // namespace beautiful_bullet

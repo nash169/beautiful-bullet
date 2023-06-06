@@ -30,10 +30,10 @@
 
 namespace beautiful_bullet {
     namespace control {
-        template <typename Agent>
+        template <typename Body>
         class AbstractControl {
         public:
-            virtual Eigen::VectorXd action(Agent& agent) = 0;
+            virtual Eigen::VectorXd action(Body& body) = 0;
         };
     } // namespace control
 

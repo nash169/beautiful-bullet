@@ -19,6 +19,7 @@ The library is still in its early stages and many other Bullet features remain t
 - Check memory allocation
 - Add visualization collision objects (implement imgui in graphics-lib)
 - Add flags when loading multibody collision shapes
+- Move to shared ptr for bodies internal controllers as well
 
 ### Dependencies
 See the corresponding installation instructions for the libraries listed above.

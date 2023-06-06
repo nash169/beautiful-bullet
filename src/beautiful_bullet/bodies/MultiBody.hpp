@@ -25,10 +25,6 @@
 #ifndef BEAUTIFULBULLET_BODIES_MULTIBODY_HPP
 #define BEAUTIFULBULLET_BODIES_MULTIBODY_HPP
 
-// Standard
-#include <iostream>
-#include <unordered_map>
-
 // Bullet
 #include <BulletCollision/btBulletCollisionCommon.h>
 #include <LinearMath/btVector3.h>
@@ -36,6 +32,7 @@
 // Pinocchio
 #include <pinocchio/multibody/fwd.hpp>
 
+#include "beautiful_bullet/common/pointers.hpp"
 #include "beautiful_bullet/control/MultiBody.h"
 #include "beautiful_bullet/utils/BulletLoader.hpp"
 
@@ -46,7 +43,8 @@ namespace beautiful_bullet {
             /* Constructor */
             MultiBody(const std::string& file, int flags = 0);
 
-            MultiBody() = default;
+            // Default constructor
+            MultiBody();
 
             // Move constructor
             MultiBody(MultiBody&& other) noexcept;
@@ -54,51 +52,76 @@ namespace beautiful_bullet {
             // No copy constructor (check explicit and default)
             MultiBody(const MultiBody&) = delete;
 
-            // Destroyer (not needed beacause of smart pointer; try to move towards raw or unique_ptr)
+            // Destroyer (try to move towards raw or unique_ptr)
             ~MultiBody();
+
+            size_t dimension() const { return _body->getNumDofs(); }
 
             /* Get multibody pointer */
             btMultiBody* body();
 
             /* Get multibody joint state */
-            const Eigen::VectorXd& state() const;
-            const Eigen::VectorXd& upperLimits() const;
-            const Eigen::VectorXd& lowerLimits() const;
+            Eigen::VectorXd state() const;
+            Eigen::VectorXd positionLower() const;
+            Eigen::VectorXd positionUpper() const;
 
             /* Get multibody joint state derivative */
-            const Eigen::VectorXd& velocity() const;
-            const Eigen::VectorXd& velocityLimits() const;
+            Eigen::VectorXd velocity() const;
+            Eigen::VectorXd velocityLower() const;
+            Eigen::VectorXd velocityUpper() const;
 
             /* Get multibody joint state second derivative */
             Eigen::VectorXd acceleration();
+            Eigen::VectorXd accelerationLower() const;
+            Eigen::VectorXd accelerationUpper() const;
 
             /* Get multibody joint torques */
-            const Eigen::VectorXd& torques() const;
-            const Eigen::VectorXd& torquesLimits() const;
+            Eigen::VectorXd effort() const;
+            Eigen::VectorXd effortLower() const;
+            Eigen::VectorXd effortUpper() const;
+            Eigen::VectorXd inverseDynamics(const Eigen::VectorXd& ddq);
 
             /* Get Dynamics */
             Eigen::MatrixXd inertiaMatrix();
+            Eigen::MatrixXd inertiaMatrix(const Eigen::VectorXd& q);
+
             Eigen::MatrixXd coriolisMatrix();
+            Eigen::MatrixXd coriolisMatrix(const Eigen::VectorXd& q, const Eigen::VectorXd& dq);
+
             Eigen::VectorXd gravityVector();
+            Eigen::VectorXd gravityVector(const Eigen::VectorXd& q);
+
             Eigen::VectorXd nonLinearEffects();
-            Eigen::VectorXd inverseDynamics(const Eigen::VectorXd& ddq);
+            Eigen::VectorXd nonLinearEffects(const Eigen::VectorXd& q, const Eigen::VectorXd& dq);
 
-            /* Get pose of the frame */
+            Eigen::MatrixXd selectionMatrix();
+            Eigen::MatrixXd selectionMatrix(const Eigen::VectorXd& tau);
+
+            /*Get Jacobian & Jacobian derivative*/
+            Eigen::MatrixXd jacobian(const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
+            Eigen::MatrixXd jacobian(const Eigen::VectorXd& q, const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
+
+            Eigen::MatrixXd jacobianDerivative(const std::string& frame = "");
+            Eigen::MatrixXd jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "");
+
+            /* Get frame */
             Eigen::Vector3d framePosition(const std::string& frame = "");
+            Eigen::Vector3d framePosition(const Eigen::VectorXd& q, const std::string& frame = "");
+
             Eigen::Matrix3d frameOrientation(const std::string& frame = "");
+            Eigen::Matrix3d frameOrientation(const Eigen::VectorXd& q, const std::string& frame = "");
+
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
+            Eigen::Matrix<double, 6, 1> framePose(const Eigen::VectorXd& q, const std::string& frame = "");
 
-            /* Get velocity of the frame */
             Eigen::Matrix<double, 6, 1> frameVelocity(const std::string& frame = "");
-
-            /* Get Jacobian */
-            Eigen::MatrixXd jacobian(const std::string& frame = "");
-
-            /* Get Hessian (Jacobian time variation precisely) */
-            Eigen::MatrixXd hessian(const std::string& frame = "");
+            Eigen::Matrix<double, 6, 1> frameVelocity(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "");
 
             /* Get Bullet loader */
-            utils::BulletLoader& loader() { return _loader; }
+            utils::BulletLoader& loader();
+
+            /* Load body from file */
+            MultiBody& loadBody(const std::string& file, int flags = 0);
 
             /* Set multibody */
             MultiBody& setBody(btMultiBody* body);
@@ -138,7 +161,7 @@ namespace beautiful_bullet {
             }
 
             /* Inverse Kinematics */
-            Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame = "", const Eigen::VectorXd* ref = nullptr, const double& w = 1.0);
+            Eigen::VectorXd inverseKinematics(const Eigen::Vector3d& position, const Eigen::Matrix3d& orientation, const std::string& frame = "");
 
             /* Update model */
             void update();
@@ -171,16 +194,10 @@ namespace beautiful_bullet {
             std::vector<std::unique_ptr<control::MultiBodyCtr>> _controllers;
 
             // Clip force
-            inline void clipForce(const int& index, double& force)
-            {
-                double maxForce = _body->getLink(index).m_jointMaxForce;
-
-                if (force >= maxForce)
-                    force = maxForce;
-                else if (force <= -maxForce)
-                    force = -maxForce;
-            }
+            inline void clipForce(const int& index, double& force);
         };
+
+        COMMON_DECLARE_SHARED(MultiBody)
     } // namespace bodies
 } // namespace beautiful_bullet
 
