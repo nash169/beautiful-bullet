@@ -179,10 +179,9 @@ namespace beautiful_bullet {
             // Bullet MultiBody Object
             btMultiBody* _body = nullptr;
 
-            // Dynamics model (ty to have them as pointers to alleviate compiling time required by Pinocchio)
-            // raw pointers because smart pointers apparently needs to know the size of the object
-            pinocchio::Data* _data = nullptr; // pinocchio::Data _data;
-            pinocchio::Model* _model = nullptr; // pinocchio::Model _model;
+            // Dynamics model (pointers to alleviate compiling time required by Pinocchio)
+            std::unique_ptr<pinocchio::Data> _data;
+            std::unique_ptr<pinocchio::Model> _model;
 
             // Loader
             utils::BulletLoader _loader; // std::shared_ptr<utils::BulletLoader> _loader;

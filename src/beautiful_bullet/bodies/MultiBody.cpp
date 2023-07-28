@@ -63,11 +63,9 @@ namespace beautiful_bullet {
             other._body = nullptr;
 
             // Move Pinocchio objects
-            _data = other._data;
-            other._data = nullptr;
+            _data = std::move(other._data);
 
-            _model = other._model;
-            other._model = nullptr;
+            _model = std::move(other._model);
 
             // Move loader
             _loader = other._loader;
@@ -88,10 +86,6 @@ namespace beautiful_bullet {
         {
             _controllers.clear();
             _controllers.shrink_to_fit();
-
-            // Delete pinocchio objects
-            delete _data;
-            delete _model;
         }
 
         btMultiBody* MultiBody::body() { return _body; }
@@ -267,11 +261,13 @@ namespace beautiful_bullet {
             _r.setIdentity();
 
             // Pinocchio model
-            _model = new pinocchio::Model();
+            _model = std::make_unique<pinocchio::Model>(pinocchio::Model());
+            // _model = new pinocchio::Model();
             pinocchio::urdf::buildModel(file, *_model);
 
             // Pinocchio data
-            _data = new pinocchio::Data(*_model);
+            _data = std::make_unique<pinocchio::Data>(pinocchio::Data(*_model));
+            // _data = new pinocchio::Data(*_model);
 
             // Update pinocchio forward kinematics
             pinocchio::forwardKinematics(*_model, *_data, _q, _v);
