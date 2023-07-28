@@ -14,83 +14,65 @@ In order to achieve that depends on the following:
 
 The library is still in its early stages and many other Bullet features remain to be implemented.
 
-### ToDo
+## ToDo
 - Fix Franka URDF (problem with prismatic links hand)
 - Check memory allocation
 - Add visualization collision objects (implement imgui in graphics-lib)
 - Add flags when loading multibody collision shapes
 - Move to shared ptr for bodies internal controllers as well
 
-### Dependencies
+## Usage
+Work in progress. Check the examples to get started.
+
+## Dependencies
 See the corresponding installation instructions for the libraries listed above.
 
-### Installation
-Clone the repository including the submodules
-```sh
-git clone --recursive https://github.com/nash169/beautiful-bullet.git (git@github.com:nash169/beautiful-bullet.git)
-```
-**beautiful-bullet** relies on WAF compilation tool.
-Arch provides an updated version of WAF exec in the standard repo
-```sh
-sudo pacman -S waf
-```
-For other distros it is better to download the latest version from the official website and move the executable in the library repo
-```sh
-wget 'https://waf.io/waf-2.0.23'
-mv waf-2.0.23 waf && mv waf /path/to/beautiful-bullet
-cd /path/to/kernel-lib
-chmod +x waf
-```
+In addition, in order to compile the project, install my [waf-tools](https://github.com/nash169/waf-tools.git).
+
+## Installation
 Compile and install using waf commands
 ```sh
-waf (./waf) configure build
+waf configure build
 ```
 or
 ```sh
-waf (./waf) configure && waf (./waf)
+waf configure && waf
 ```
 Install the library (optional)
 ```sh
-(sudo) waf (./waf) install
+(sudo) waf install
 ```
 If you want to make a clean installation
 ```sh
-(sudo) waf (./waf) distclean configure build install
+(sudo) waf distclean configure build install
 ```
 
-#### Compilation options
+### Compilation options
 In order to set the desired compiler define the environment variable CXX=<g++,clang++,icpc> (gnu, clang and intel compiler respectively).
 
 Compile in debug mode (without AVX support)
 ```sh
-waf (./waf) configure --debug
+waf configure --debug
 ```
 Compile static library (default option)
 ```sh
-waf (./waf) configure --static
+waf configure --static
 ```
 Compile shared library
 ```sh
-waf (./waf) configure --shared
+waf configure --shared
 ```
 Define a specific installation path
 ```sh
-waf (./waf) configure --prefix=/path/to/install/folder
+waf configure --prefix=/path/to/install/folder
 ```
 
-### Finding the library
-In order to find and link the lib to other projects copy and paste the following file into the waf tools
-```sh
-scripts/beautifulbullet.py
-```
+## Finding the library
+In case you want to use this library in your project the waf tool necessary to automatically detect it is already included in my **waf-tools** repository.
 
-### Examples
-Once the library is compiled all the examples can be found in
+## Examples
+Once the library is compiled all the examples can be run with
 ```sh
-./build/src/examples/
+./build/src/examples/<name_example>
 ```
-Certain examples depend on **utils-lib**, **control-lib** and **graphics-lib**
-```sh
-cd /path/to/library
-waf (./waf) configure --release build install
-```
+Certain examples depend on **utils-lib**, **control-lib** and **graphics-lib**.
