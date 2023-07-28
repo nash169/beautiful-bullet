@@ -70,7 +70,7 @@ namespace beautiful_bullet {
 
                     if (body->type() == bodies::BodyType::BOX) {
                         auto motionState = new BulletIntegration::MotionState{
-                            _app->addPrimitive("cube")
+                            _app->primitive("cube")
                                 .addPriorTransformation(Matrix4::scaling(Vector3(static_cast<btBoxShape*>(body->body()->getCollisionShape())->getHalfExtentsWithMargin())))
                                 .setColor(tools::color(body->params().color))
                                 .setTransformation(Matrix4(pose))};
@@ -80,7 +80,7 @@ namespace beautiful_bullet {
                     }
                     else if (body->type() == bodies::BodyType::SPHERE) {
                         auto motionState = new BulletIntegration::MotionState{
-                            _app->addPrimitive("sphere")
+                            _app->primitive("sphere")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
@@ -95,7 +95,7 @@ namespace beautiful_bullet {
                     }
                     else if (body->type() == bodies::BodyType::CYLINDER) {
                         auto motionState = new BulletIntegration::MotionState{
-                            _app->addPrimitive("cylinder")
+                            _app->primitive("cylinder")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
@@ -110,7 +110,7 @@ namespace beautiful_bullet {
                     }
                     else if (body->type() == bodies::BodyType::CAPSULE) {
                         auto motionState = new BulletIntegration::MotionState{
-                            _app->addPrimitive("capsule")
+                            _app->primitive("capsule")
                                 .addPriorTransformation(
                                     Matrix4::scaling(
                                         Vector3(
@@ -176,7 +176,7 @@ namespace beautiful_bullet {
                     case urdf::Geometry::SPHERE: {
                         urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(visual->geometry.get());
 
-                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
+                        auto it = _mapTransform.insert(std::make_pair(&_app->primitive("sphere")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
                             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 
@@ -185,7 +185,7 @@ namespace beautiful_bullet {
                     case urdf::Geometry::BOX: {
                         urdf::Box* box = dynamic_cast<urdf::Box*>(visual->geometry.get());
 
-                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
+                        auto it = _mapTransform.insert(std::make_pair(&_app->primitive("box")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
                             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 
@@ -194,7 +194,7 @@ namespace beautiful_bullet {
                     case urdf::Geometry::CYLINDER: {
                         urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(visual->geometry.get());
 
-                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
+                        auto it = _mapTransform.insert(std::make_pair(&_app->primitive("cylinder")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
                             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 
@@ -235,7 +235,7 @@ namespace beautiful_bullet {
                     case urdf::Geometry::SPHERE: {
                         urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(collision->geometry.get());
 
-                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("sphere")
+                        auto it = _mapTransform.insert(std::make_pair(&_app->primitive("sphere")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(sphere->radius, sphere->radius, sphere->radius))),
                             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 
@@ -244,7 +244,7 @@ namespace beautiful_bullet {
                     case urdf::Geometry::BOX: {
                         urdf::Box* box = dynamic_cast<urdf::Box*>(collision->geometry.get());
 
-                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("box")
+                        auto it = _mapTransform.insert(std::make_pair(&_app->primitive("box")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(box->dim.x, box->dim.y, box->dim.z))),
                             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 
@@ -253,7 +253,7 @@ namespace beautiful_bullet {
                     case urdf::Geometry::CYLINDER: {
                         urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(collision->geometry.get());
 
-                        auto it = _mapTransform.insert(std::make_pair(&_app->addPrimitive("cylinder")
+                        auto it = _mapTransform.insert(std::make_pair(&_app->primitive("cylinder")
                                                                            .addPriorTransformation(Matrix4::scaling(Vector3(cylinder->radius, cylinder->radius, cylinder->length))),
                             (index == -1) ? &multibody->getBaseCollider()->getWorldTransform() : &multibody->getLinkCollider(index)->getWorldTransform()));
 

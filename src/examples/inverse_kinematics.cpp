@@ -93,7 +93,7 @@ int main(int argc, char const* argv[])
 
     static_cast<graphics::MagnumGraphics&>(simulator.graphics())
         .app()
-        .addFrame()
+        .frame()
         .setTransformation(Matrix4::translation(translation) * Matrix4(rotation) * Matrix4::scaling({0.6, 0.6, 0.6}));
 
     Vector3 translation_ee(Eigen::Vector3f(iiwa->framePosition().cast<float>()));
@@ -101,7 +101,7 @@ int main(int argc, char const* argv[])
 
     static_cast<graphics::MagnumGraphics&>(simulator.graphics())
         .app()
-        .addFrame()
+        .frame()
         .setTransformation(Matrix4::translation(translation_ee) * Matrix4(rotation_ee) * Matrix4::scaling({0.5, 0.5, 0.5}));
 
     // Run simulation
