@@ -31,8 +31,8 @@
 #endif
 
 // Spaces
-#include <control_lib/spatial/RN.hpp>
-#include <control_lib/spatial/SE3.hpp>
+#include <control_lib/spatial/R.hpp>
+#include <control_lib/spatial/SE.hpp>
 
 // Controllers
 #include <control_lib/controllers/Feedback.hpp>
@@ -67,7 +67,7 @@ struct Params {
 };
 
 struct OperationSpaceFeedback : public control::MultiBodyCtr {
-    OperationSpaceFeedback(const spatial::SE3& target) : control::MultiBodyCtr(ControlMode::OPERATIONSPACE)
+    OperationSpaceFeedback(const spatial::SE<3>& target) : control::MultiBodyCtr(ControlMode::OPERATIONSPACE)
     {
         // set controlled frame
         _frame = "lbr_iiwa_link_7";
@@ -85,19 +85,19 @@ struct OperationSpaceFeedback : public control::MultiBodyCtr {
     Eigen::VectorXd action(bodies::MultiBody& body) override
     {
         // current state
-        spatial::SE3 sCurr(body.framePose(_frame));
-        sCurr._vel = body.frameVelocity(_frame);
+        spatial::SE<3> sCurr(body.framePose(_frame));
+        sCurr._v = body.frameVelocity(_frame);
 
         // reference state
-        spatial::SE3 sRef;
-        sRef._vel = _ds.action(sCurr);
+        spatial::SE<3> sRef;
+        sRef._v = _ds.action(sCurr);
 
         return _feedback.setReference(sRef).action(sCurr);
     }
 
     // ds & feedback
-    controllers::LinearDynamics<Params, spatial::SE3> _ds;
-    controllers::Feedback<Params, spatial::SE3> _feedback;
+    controllers::LinearDynamics<Params, spatial::SE<3>> _ds;
+    controllers::Feedback<Params, spatial::SE<3>> _feedback;
 };
 
 struct ReferenceConfiguration {
@@ -106,8 +106,8 @@ struct ReferenceConfiguration {
         _Kp = 0.01 * Eigen::MatrixXd::Identity(7, 7);
         _Kd = 0.03 * Eigen::MatrixXd::Identity(7, 7);
 
-        // _eff.setZero(7);
-        // _acc.setZero(7);
+        // _f.setZero(7);
+        // _a.setZero(7);
 
         // _ref.setZero(7);
         _ref << 0., 0.7, 0.4, 0.6, 0.3, 0.5, 0.1;
@@ -121,24 +121,24 @@ struct ReferenceConfiguration {
         return *this;
     }
 
-    void update(const spatial::RN<7>& state)
+    void update(const spatial::R<7>& state)
     {
-        _acc = _Kp * (_ref - state._pos) - _Kd * state._vel;
-        _eff = _model->nonLinearEffects(state._pos, state._vel);
+        _a = _Kp * (_ref - state._x) - _Kd * state._v;
+        _f = _model->nonLinearEffects(state._x, state._v);
     }
 
-    const Eigen::Matrix<double, 7, 1>& acceleration() const { return _acc; }
+    const Eigen::Matrix<double, 7, 1>& acceleration() const { return _a; }
 
-    const Eigen::Matrix<double, 7, 1>& effort() const { return _eff; }
+    const Eigen::Matrix<double, 7, 1>& effort() const { return _f; }
 
 protected:
     bodies::MultiBodyPtr _model;
-    Eigen::Matrix<double, 7, 1> _ref, _acc, _eff;
+    Eigen::Matrix<double, 7, 1> _ref, _a, _f;
     Eigen::MatrixXd _Kp, _Kd;
 };
 
 struct ConfigurationSpaceQP : public control::MultiBodyCtr {
-    ConfigurationSpaceQP(const bodies::MultiBodyPtr& model, const spatial::SE3& target) : control::MultiBodyCtr(ControlMode::CONFIGURATIONSPACE)
+    ConfigurationSpaceQP(const bodies::MultiBodyPtr& model, const spatial::SE<3>& target) : control::MultiBodyCtr(ControlMode::CONFIGURATIONSPACE)
     {
         // step
         _dt = 0.1;
@@ -147,14 +147,14 @@ struct ConfigurationSpaceQP : public control::MultiBodyCtr {
         _frame = "lbr_iiwa_link_7";
 
         // Robot state
-        spatial::RN<7> state;
-        state._pos = model->state();
-        state._vel = model->velocity();
-        state._acc = model->acceleration();
-        state._eff = model->effort();
+        spatial::R<7> state;
+        state._x = model->state();
+        state._v = model->velocity();
+        state._a = model->acceleration();
+        state._f = model->effort();
 
         // Task state
-        spatial::SE3 pose(model->frameOrientation(), model->framePosition());
+        spatial::SE<3> pose(model->frameOrientation(), model->framePosition());
 
         // set ds
         Eigen::MatrixXd A = 1 * Eigen::MatrixXd::Identity(6, 6);
@@ -190,14 +190,14 @@ struct ConfigurationSpaceQP : public control::MultiBodyCtr {
     Eigen::VectorXd action(bodies::MultiBody& body) override
     {
         // task state
-        spatial::SE3 sCurr(body.framePose(_frame));
+        spatial::SE<3> sCurr(body.framePose(_frame));
 
         // robot state
-        spatial::RN<7> state;
-        state._pos = body.state();
-        state._vel = body.velocity();
-        state._acc = body.acceleration();
-        state._eff = body.effort();
+        spatial::R<7> state;
+        state._x = body.state();
+        state._v = body.velocity();
+        state._a = body.acceleration();
+        state._f = body.effort();
 
         // update ds
         _ds.update(sCurr);
@@ -221,7 +221,7 @@ struct ConfigurationSpaceQP : public control::MultiBodyCtr {
     double _dt;
 
     // ds
-    controllers::LinearDynamics<Params, spatial::SE3> _ds;
+    controllers::LinearDynamics<Params, spatial::SE<3>> _ds;
 
     // reference configuration
     ReferenceConfiguration _ref;
@@ -250,16 +250,16 @@ int main(int argc, char const* argv[])
     // Task space target
     Eigen::Vector3d xDes(0.365308, -0.0810892, 1.13717);
     Eigen::Matrix3d oDes = (Eigen::Matrix3d() << 0.591427, -0.62603, 0.508233, 0.689044, 0.719749, 0.0847368, -0.418848, 0.300079, 0.857041).finished();
-    spatial::SE3 tDes(oDes, xDes);
+    spatial::SE<3> tDes(oDes, xDes);
 
     Eigen::VectorXd q_ref = (Eigen::Matrix<double, 7, 1>() << 0, 0, 0, -M_PI / 4, 0, M_PI / 4, 0).finished();
     // Set controlled robot
     (*iiwaBullet)
-        .setState(q_ref)
+        // .setState(q_ref)
         // .setPosition(0, -1, 0)
-        // .addControllers(std::make_unique<OperationSpaceFeedback>(tDes))
-        .addControllers(std::make_unique<ConfigurationSpaceQP>(iiwaBullet, tDes));
-    // .activateGravity();
+        .addControllers(std::make_unique<OperationSpaceFeedback>(tDes))
+        // .addControllers(std::make_unique<ConfigurationSpaceQP>(iiwaBullet, tDes));
+        .activateGravity();
 
     // Reference configuration
     Eigen::VectorXd state(7);
