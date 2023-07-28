@@ -61,17 +61,18 @@ int main(int argc, char** argv)
 
     // MultiBodies params
     Eigen::VectorXd state(7);
-    state << 0, 0.2, 0, 0, 0, 0, 0;
+    state << 0, 0.2, 0.1, 0.2, 0.3, 0.7, 0.2;
 
     // Create agent
     bodies::MultiBodyPtr iiwaBullet = std::make_shared<bodies::MultiBody>("models/iiwa_bullet/model.urdf"),
                          iiwa = std::make_shared<bodies::MultiBody>("models/iiwa/urdf/iiwa14.urdf"),
-                         franka = std::make_shared<bodies::MultiBody>("models/franka/urdf/panda.urdf");
+                         franka = std::make_shared<bodies::MultiBody>("models/franka/panda.urdf");
 
-    iiwaBullet->setPosition(2, -2, 0)
-        .setState(state);
+    iiwaBullet->setPosition(2, -2, 0);
     iiwa->setPosition(2, 2, 0);
-    franka->activateGravity();
+
+
+    franka->activateGravity().setState(state);
 
     // Add objects to simulator
     simulator.add(box, sphere, iiwaBullet, iiwa, franka);
