@@ -61,6 +61,9 @@ def configure(cfg):
     # Bullet components
     cfg.options.bullet_components = "BulletDynamics,BulletCollision,LinearMath,Bullet3Common"
 
+    # urdfdom headers
+    cfg.options.urdfdom_headers = True
+
     # Load library configurations
     load(cfg, compiler, required, optional)
 
