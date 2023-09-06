@@ -135,7 +135,7 @@ namespace beautiful_bullet {
         }
 
         /* One step simulation */
-        inline void step(const size_t& time = 1)
+        inline bool step(const size_t& time = 1)
         {
             // Update objects
             for (auto& object : _rigidBody)
@@ -149,8 +149,7 @@ namespace beautiful_bullet {
             _world->stepSimulation(_timeStep, 0);
 
             // Refresh graphics
-            if (time % _graphics->desiredFPS() == 0)
-                _graphics->refresh();
+            return time % _graphics->desiredFPS() == 0 ? _graphics->refresh() : true;
         }
 
         /* Run simulation */
