@@ -146,10 +146,10 @@ namespace beautiful_bullet {
 
             /* Add controllers */
             template <typename... Args>
-            MultiBody& addControllers(std::unique_ptr<control::MultiBodyCtr> controller, Args... args)
+            MultiBody& addControllers(std::shared_ptr<control::MultiBodyCtr> controller, Args... args)
             {
                 // Add controller
-                _controllers.push_back(std::move(controller));
+                _controllers.push_back(controller);
 
                 // Init controller
                 // _controllers.back()->init();
@@ -190,7 +190,7 @@ namespace beautiful_bullet {
             btTransform _rootFrame;
 
             // Controllers (for now shared because of issues in moving the agent object)
-            std::vector<std::unique_ptr<control::MultiBodyCtr>> _controllers;
+            std::vector<std::shared_ptr<control::MultiBodyCtr>> _controllers;
 
             // Clip force
             inline void clipForce(const int& index, double& force);
