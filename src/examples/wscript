@@ -25,9 +25,16 @@
 
 import os
 
-required = {"inverse_kinematics.cpp": [
-    "GRAPHICSLIB"], "simulation.cpp": ["UTILSLIB"]}
-optional = {"simulation.cpp": ["GRAPHICSLIB"]}
+required_bld = {
+    "torque_control.cpp": ["CONTROLLIB"]
+}
+
+optional_bld = {
+    "simulation_test.cpp": ["GRAPHICSLIB"],
+    "torque_control.cpp": ["GRAPHICSLIB"],
+    "show_primitives.cpp": ["GRAPHICSLIB"],
+    "inverse_kinematics.cpp": ["GRAPHICSLIB"],
+}
 
 
 def options(opt):
@@ -41,25 +48,34 @@ def configure(cfg):
 def build(bld):
     sources = []
     for _, _, filenames in os.walk(bld.path.abspath()):
-        sources += [
-            filename for filename in filenames if filename.endswith(('.cpp', '.cc'))]
+        sources += [filename for filename in filenames if filename.endswith(('.cpp', '.cc'))]
 
     # Compile all the examples
     for example in sources:
-        defines = ["GRAPHICS"] if example in optional and set(
-            optional[example]).issubset(bld.env["libs"]) else None
+        # generate defines for using graphics (makes this generic)
+        defines = ["GRAPHICS"] if example in optional_bld and set(optional_bld[example]).issubset(bld.env["libs"]) else None
 
-        if example in required:
-            if not set(required[example]).issubset(bld.env["libs"]):
-                break
-
-        bld.program(
-            features="cxx",
-            install_path=None,
-            source=example,
-            includes="..",
-            uselib=bld.env["libs"],
-            use=bld.env["libname"],
-            defines=defines,
-            target=example[: len(example) - len(".cpp")],
-        )
+        for example in sources:
+            if example in required_bld:
+                if set(required_bld[example]).issubset(bld.env["libs"]):
+                    bld.program(
+                        features="cxx",
+                        install_path=None,
+                        source=example,
+                        includes="..",
+                        uselib=bld.env["libs"],
+                        use=bld.env["libname"],
+                        defines=defines,
+                        target=example[:-len(".cpp")],
+                    )
+            else:
+                bld.program(
+                        features="cxx",
+                        install_path=None,
+                        source=example,
+                        includes="..",
+                        uselib=bld.env["libs"],
+                        use=bld.env["libname"],
+                        defines=defines,
+                        target=example[:-len(".cpp")],
+                    )
