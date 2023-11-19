@@ -166,7 +166,7 @@ namespace beautiful_bullet {
             return J;
         }
 
-        Eigen::MatrixXd MultiBody::jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame)
+        Eigen::MatrixXd MultiBody::jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame, const pinocchio::ReferenceFrame& rf)
         {
             // Get frame ID
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
@@ -177,7 +177,7 @@ namespace beautiful_bullet {
 
             // Compute the jacobian
             pinocchio::computeJointJacobiansTimeVariation(*_model, *_data, q, dq);
-            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, pinocchio::LOCAL, H);
+            pinocchio::getFrameJacobianTimeVariation(*_model, *_data, FRAME_ID, rf, H);
 
             return H;
         }
@@ -232,7 +232,7 @@ namespace beautiful_bullet {
         }
 
         Eigen::MatrixXd MultiBody::jacobian(const std::string& frame, const pinocchio::ReferenceFrame& rf) { return jacobian(_q, frame, rf); }
-        Eigen::MatrixXd MultiBody::jacobianDerivative(const std::string& frame) { return jacobianDerivative(_q, _v, frame); }
+        Eigen::MatrixXd MultiBody::jacobianDerivative(const std::string& frame, const pinocchio::ReferenceFrame& rf) { return jacobianDerivative(_q, _v, frame, rf); }
         Eigen::Vector3d MultiBody::framePosition(const std::string& frame) { return framePosition(_q, frame); }
         Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame) { return frameOrientation(_q, frame); }
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame) { return framePose(_q, frame); }

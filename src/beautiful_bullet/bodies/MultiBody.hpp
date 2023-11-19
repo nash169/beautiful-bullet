@@ -101,8 +101,8 @@ namespace beautiful_bullet {
             Eigen::MatrixXd jacobian(const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
             Eigen::MatrixXd jacobian(const Eigen::VectorXd& q, const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
 
-            Eigen::MatrixXd jacobianDerivative(const std::string& frame = "");
-            Eigen::MatrixXd jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "");
+            Eigen::MatrixXd jacobianDerivative(const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
+            Eigen::MatrixXd jacobianDerivative(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
 
             /* Get frame */
             Eigen::Vector3d framePosition(const std::string& frame = "");
