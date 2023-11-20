@@ -114,8 +114,8 @@ namespace beautiful_bullet {
             Eigen::Matrix<double, 6, 1> framePose(const std::string& frame = "");
             Eigen::Matrix<double, 6, 1> framePose(const Eigen::VectorXd& q, const std::string& frame = "");
 
-            Eigen::Matrix<double, 6, 1> frameVelocity(const std::string& frame = "");
-            Eigen::Matrix<double, 6, 1> frameVelocity(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "");
+            Eigen::Matrix<double, 6, 1> frameVelocity(const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
+            Eigen::Matrix<double, 6, 1> frameVelocity(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame = "", const pinocchio::ReferenceFrame& rf = pinocchio::LOCAL);
 
             /* Get Bullet loader */
             utils::BulletLoader& loader();

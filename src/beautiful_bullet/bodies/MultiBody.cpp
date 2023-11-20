@@ -189,10 +189,7 @@ namespace beautiful_bullet {
 
             // Compute the forward kinematics and update frame placements
             pinocchio::forwardKinematics(*_model, *_data, q);
-            pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
-
-            // Get frame pose
-            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+            pinocchio::SE3 oMf = pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
 
             return oMf.translation() + _x;
         }
@@ -203,10 +200,8 @@ namespace beautiful_bullet {
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
             // Compute the forward kinematics and update frame placements
-            pinocchio::framesForwardKinematics(*_model, *_data, q);
-
-            // Get frame pose
-            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
+            pinocchio::forwardKinematics(*_model, *_data, q);
+            pinocchio::SE3 oMf = pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
 
             return oMf.rotation(); // add transformation for orientation base
         }
@@ -217,18 +212,18 @@ namespace beautiful_bullet {
             const int FRAME_ID = _model->existFrame(frame) ? _model->getFrameId(frame) : _model->nframes - 1;
 
             // Compute the forward kinematics and update frame placements
-            pinocchio::framesForwardKinematics(*_model, *_data, q);
+            pinocchio::forwardKinematics(*_model, *_data, q);
+            pinocchio::SE3 oMf = pinocchio::updateFramePlacement(*_model, *_data, FRAME_ID);
 
             // Get frame pose
-            pinocchio::SE3 oMf = _data->oMf[FRAME_ID];
             Eigen::AngleAxisd rot(oMf.rotation());
 
             return (Eigen::Matrix<double, 6, 1>() << oMf.translation() + _x, rot.angle() * rot.axis()).finished(); // add transformation for orientation base
         }
 
-        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame)
+        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const std::string& frame, const pinocchio::ReferenceFrame& rf)
         {
-            return jacobian(q, frame) * dq;
+            return jacobian(q, frame, rf) * dq;
         }
 
         Eigen::MatrixXd MultiBody::jacobian(const std::string& frame, const pinocchio::ReferenceFrame& rf) { return jacobian(_q, frame, rf); }
@@ -236,7 +231,7 @@ namespace beautiful_bullet {
         Eigen::Vector3d MultiBody::framePosition(const std::string& frame) { return framePosition(_q, frame); }
         Eigen::Matrix3d MultiBody::frameOrientation(const std::string& frame) { return frameOrientation(_q, frame); }
         Eigen::Matrix<double, 6, 1> MultiBody::framePose(const std::string& frame) { return framePose(_q, frame); }
-        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame) { return frameVelocity(_q, _v, frame); }
+        Eigen::Matrix<double, 6, 1> MultiBody::frameVelocity(const std::string& frame, const pinocchio::ReferenceFrame& rf) { return frameVelocity(_q, _v, frame, rf); }
 
         utils::BulletLoader& MultiBody::loader()
         {
